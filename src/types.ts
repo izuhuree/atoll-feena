@@ -2,7 +2,8 @@ export type Atoll =
   | 'North Malé' | 'South Malé' | 'North Ari' | 'South Ari' 
   | 'Baa' | 'Lhaviyani' | 'Vaavu' | 'Meemu' | 'Faafu' 
   | 'Dhaalu' | 'Laamu' | 'Haa Alifu' | 'Haa Dhaalu' 
-  | 'Raa' | 'Noonu' | 'Gaafu Alifu' | 'Gaafu Dhaalu' 
+  | 'Raa' | 'Noonu' | 'Shaviyani' | 'Thaa' | 'Kaafu'
+  | 'Gaafu Alifu' | 'Gaafu Dhaalu' 
   | 'Fuvahmulah' | 'Addu';
 
 export type DiveType = 
@@ -24,16 +25,25 @@ export interface DiveSite {
   name: string;
   atoll: Atoll;
   islandBase: string;
+  region?: 'north' | 'central' | 'south';
   type: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   depthMin: number;
   depthMax: number;
   current: CurrentStrength;
+  visibility?: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
   marineLifeHighlights: string[];
   bestSeason?: string;
   description: string;
   isProtected?: boolean;
   regulatedAccess?: boolean;
+  protectedStatus?: string;
+  localName?: string;
+  notes?: string;
 }
 
 export interface UserProfile {

@@ -109,8 +109,8 @@ export default function App() {
       case 'home': return <Home onLogDive={() => setCurrentTab('quick-log')} user={user} onOpenInsights={() => setCurrentTab('insights')} onOpenGuide={() => setCurrentTab('field-guide')} onNavigate={(t) => setCurrentTab(t as any)} />;
       case 'sites': return <DiveSites onLogAtSite={() => setCurrentTab('quick-log')} />;
       case 'quick-log': return <QuickLog onComplete={() => setCurrentTab('logbook')} onCancel={() => setCurrentTab('home')} />;
-      case 'logbook': return <Logbook />;
-      case 'insights': return <Insights onBack={() => setCurrentTab('home')} />;
+      case 'logbook': return <Logbook onLogDive={() => setCurrentTab('quick-log')} />;
+      case 'insights': return <Insights onBack={() => setCurrentTab('home')} onLogDive={() => setCurrentTab('quick-log')} />;
       case 'field-guide': return <FieldGuide onBack={() => setCurrentTab('home')} />;
       case 'user-guide': return <UserGuide onBack={() => setCurrentTab('home')} />;
       case 'profile': return <Profile user={user} onOpenWatch={() => setCurrentTab('watch')} />;

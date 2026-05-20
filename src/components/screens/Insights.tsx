@@ -14,16 +14,55 @@ import {
   Waves, 
   Clock, 
   Navigation2,
-  Fish
+  Fish,
+  PlusCircle
 } from 'lucide-react';
 import { useDives } from '../../hooks/useDives';
 
 interface InsightsProps {
   onBack: () => void;
+  onLogDive?: () => void;
 }
 
-export function Insights({ onBack }: InsightsProps) {
+export function Insights({ onBack, onLogDive }: InsightsProps) {
   const { dives } = useDives();
+
+  if (dives.length === 0) {
+    return (
+      <div className="bg-slate-50 min-h-screen">
+        <header className="px-6 pt-12 pb-6 flex items-center gap-4 bg-white sticky top-0 z-10 border-b border-slate-100">
+          <button
+            onClick={onBack}
+            aria-label="Back"
+            className="w-11 h-11 flex items-center justify-center bg-slate-50 rounded-full active:scale-90 transition-transform"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-xl font-display font-bold text-maldives-deep">Your Insights</h1>
+        </header>
+        <div className="px-6 py-16 text-center">
+          <div className="w-20 h-20 bg-maldives-shallow/40 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Waves className="text-maldives-lagoon w-10 h-10" />
+          </div>
+          <h2 className="font-display font-bold text-xl text-maldives-deep mb-2">
+            No insights yet
+          </h2>
+          <p className="text-slate-500 text-sm leading-relaxed mb-6 max-w-xs mx-auto">
+            Log a few dives and we'll show you trends — depth, air efficiency and
+            the marine life you spot most.
+          </p>
+          {onLogDive && (
+            <button
+              onClick={onLogDive}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-maldives-deep text-white rounded-2xl text-sm font-semibold active:scale-[0.98] transition-transform shadow-lg shadow-slate-200"
+            >
+              <PlusCircle className="w-4 h-4" /> Log my first dive
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // Actual data calculations
   const depthCategories = [

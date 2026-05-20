@@ -37,10 +37,23 @@ service cloud.firestore {
       return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
              data.atoll is string && data.atoll.size() > 0 &&
              data.difficulty in ['beginner', 'intermediate', 'advanced'] &&
+             (data.id == null || data.id is string && data.id.size() <= 128) &&
+             (data.islandBase == null || data.islandBase is string && data.islandBase.size() <= 100) &&
+             (data.region == null || data.region in ['north', 'central', 'south']) &&
+             (data.type == null || data.type is string && data.type.size() <= 80) &&
+             (data.depthMin == null || data.depthMin is number && data.depthMin >= 0 && data.depthMin <= 100) &&
              (data.depthMax == null || data.depthMax is number && data.depthMax >= 0 && data.depthMax <= 100) &&
+             (data.current == null || data.current in ['none', 'mild', 'moderate', 'strong', 'very strong', 'unknown']) &&
+             (data.visibility == null || data.visibility is string && data.visibility.size() <= 40) &&
+             (data.coordinates == null || data.coordinates is map) &&
+             (data.marineLifeHighlights == null || data.marineLifeHighlights is list && data.marineLifeHighlights.size() <= 20) &&
              (data.description == null || data.description is string && data.description.size() <= 1000) &&
              (data.bestSeason == null || data.bestSeason is string && data.bestSeason.size() <= 100) &&
              (data.isProtected == null || data.isProtected is bool) &&
+             (data.regulatedAccess == null || data.regulatedAccess is bool) &&
+             (data.protectedStatus == null || data.protectedStatus is string && data.protectedStatus.size() <= 100) &&
+             (data.localName == null || data.localName is string && data.localName.size() <= 100) &&
+             (data.notes == null || data.notes is string && data.notes.size() <= 500) &&
              (data.updatedAt == null || data.updatedAt is string) &&
              (data.createdAt == null || data.createdAt is string);
     }
@@ -103,7 +116,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isSignedIn() && isValidId(siteId) && isValidDiveSite(incoming()) && incoming().keys().hasAll(['name', 'atoll', 'difficulty']) && incoming().keys().size() >= 3;
       allow update: if isSignedIn() && isValidId(siteId) && isValidDiveSite(incoming()) && (
-        isAdmin() || (incoming().id == existing().id && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'depthMax', 'difficulty', 'bestSeason', 'isProtected', 'updatedAt']))
+        isAdmin() || (incoming().id == existing().id && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'atoll', 'islandBase', 'region', 'type', 'difficulty', 'depthMin', 'depthMax', 'current', 'visibility', 'coordinates', 'marineLifeHighlights', 'description', 'bestSeason', 'isProtected', 'regulatedAccess', 'protectedStatus', 'localName', 'notes', 'updatedAt']))
       );
       allow delete: if isAdmin();
     }

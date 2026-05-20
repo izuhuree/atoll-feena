@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { ChevronLeft, Waves } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useDives } from '../../hooks/useDives';
-import { MARINE_LIFE_DATABASE } from '../../data/marineLife';
 import { useQuickLogForm } from '../../hooks/useQuickLogForm';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { Step1 } from '../quick-log/Step1';
@@ -15,23 +14,38 @@ interface QuickLogProps {
   onCancel: () => void;
 }
 
+const TOTAL_STEPS = 6;
+const STEP_LABELS: Record<number, string> = {
+  1: 'Site',
+  2: 'Depth & Time',
+  3: 'Gas & Conditions',
+  4: 'Marine Life',
+  5: 'Photos',
+  6: 'Review',
+};
+
 export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
   const { dives, addDive } = useDives();
   const [step, setStep] = useState(1);
   const { formData, setFormData, calculateSAC } = useQuickLogForm();
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showStepError, setShowStepError] = useState(false);
 
   const {
     uploadingProgress,
     fileInputRef,
     handleFileSelect,
-    triggerFileInput
+    triggerFileInput,
   } = useFileUpload((file, id, type, url) => {
     const species = (fileInputRef.current as any).speciesTag;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      media: [...(prev.media || []), { id, type, url, description: species ? `Photo of ${species}` : undefined } as any]
+      media: [
+        ...(prev.media || []),
+        { id, type, url, description: species ? `Photo of ${species}` : undefined } as any,
+      ],
     }));
     (fileInputRef.current as any).speciesTag = null;
   });
@@ -40,7 +54,7 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
     if (!formData.marineLife?.includes(species)) {
       setFormData({
         ...formData,
-        marineLife: [...(formData.marineLife || []), species]
+        marineLife: [...(formData.marineLife || []), species],
       });
     }
   };
@@ -48,7 +62,7 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
   const removeSighting = (species: string) => {
     setFormData({
       ...formData,
-      marineLife: formData.marineLife?.filter(l => l !== species)
+      marineLife: formData.marineLife?.filter((l) => l !== species),
     });
   };
 
@@ -60,28 +74,62 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
   const removeMedia = (id: string) => {
     setFormData({
       ...formData,
-      media: formData.media?.filter(m => m.id !== id)
+      media: formData.media?.filter((m) => m.id !== id),
     });
   };
 
-  const handleNext = () => {
-    if (step === 1 && !formData.customSiteName) return;
-    setStep(s => s + 1);
+  const isStepValid = () => {
+    if (step === 1) {
+      // Need a site name (either picked from list or entered manually).
+      return !!formData.customSiteName?.trim();
+    }
+    return true;
   };
 
-  const handleBack = () => step > 1 ? setStep(s => s - 1) : onCancel();
+  const stepErrorMessage = () => {
+    if (step === 1) return 'Pick a site or enter a name to continue.';
+    return '';
+  };
 
-  const isStepValid = () => {
-    if (step === 1) return !!formData.customSiteName;
-    return true;
+  const handleNext = () => {
+    if (!isStepValid()) {
+      setShowStepError(true);
+      return;
+    }
+    setShowStepError(false);
+    setStep((s) => Math.min(s + 1, TOTAL_STEPS));
+  };
+
+  const hasUserInput = () =>
+    !!(
+      formData.customSiteName ||
+      formData.siteId ||
+      (formData.marineLife && formData.marineLife.length > 0) ||
+      (formData.notes && formData.notes.length > 0) ||
+      (formData.media && formData.media.length > 0)
+    );
+
+  const handleBack = () => {
+    setShowStepError(false);
+    if (step > 1) {
+      setStep((s) => s - 1);
+      return;
+    }
+    // On step 1, going back exits the flow — guard against accidental data loss.
+    if (hasUserInput()) {
+      setShowCancelConfirm(true);
+    } else {
+      onCancel();
+    }
   };
 
   const handleComplete = async () => {
     setIsSubmitting(true);
     try {
       const sac = calculateSAC();
-      const nextDiveNumber = (dives.length > 0 ? Math.max(...dives.map(d => d.diveNumber || 0)) : 0) + 1;
-      
+      const nextDiveNumber =
+        (dives.length > 0 ? Math.max(...dives.map((d) => d.diveNumber || 0)) : 0) + 1;
+
       await addDive({
         ...formData,
         sac,
@@ -89,7 +137,7 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
         siteId: formData.siteId || 'custom',
         customSiteName: formData.customSiteName || 'Leisure Dive',
         syncStatus: 'synced',
-        media: formData.media || []
+        media: formData.media || [],
       } as any);
       onComplete();
     } catch (error) {
@@ -99,29 +147,46 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
     }
   };
 
+  const progressPct = (step / TOTAL_STEPS) * 100;
+
   return (
     <div className="min-h-screen bg-white">
-      <header className="px-6 pt-12 pb-4 flex items-center justify-between sticky top-0 bg-white z-10">
-        <button onClick={handleBack} className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full">
-          <ChevronLeft className="w-6 h-6" />
-        </button>
-        <div className="flex flex-col items-center">
-          <div className="flex items-center gap-1.5">
-            <img 
-              src="/logo.png" 
-              alt="" 
-              className="w-4 h-4 rounded-full object-cover"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-            <h1 className="font-display font-bold text-lg text-maldives-deep leading-none">AtollFeeNa</h1>
+      <header className="px-6 pt-12 pb-3 sticky top-0 bg-white z-10 border-b border-slate-100">
+        <div className="flex items-center justify-between mb-3">
+          <button
+            onClick={handleBack}
+            aria-label={step > 1 ? 'Previous step' : 'Cancel logging'}
+            className="w-11 h-11 flex items-center justify-center bg-slate-50 rounded-full active:scale-90 transition-transform"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <div className="flex flex-col items-center">
+            <h1 className="font-display font-bold text-base text-maldives-deep leading-none">
+              {STEP_LABELS[step]}
+            </h1>
+            <p className="text-[10px] uppercase tracking-widest font-medium text-slate-400 mt-1">
+              Step {step} of {TOTAL_STEPS}
+            </p>
           </div>
-          <p className="text-[10px] uppercase tracking-widest font-medium text-slate-400 mt-0.5">{step}/6</p>
+          <div className="w-11" />
         </div>
-        <div className="w-10" />
+        <div
+          className="h-1.5 bg-slate-100 rounded-full overflow-hidden"
+          role="progressbar"
+          aria-valuenow={step}
+          aria-valuemin={1}
+          aria-valuemax={TOTAL_STEPS}
+          aria-label="Dive log progress"
+        >
+          <div
+            className="h-full bg-maldives-lagoon transition-all duration-300"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
       </header>
 
       <div className="px-6 py-6 pb-40">
-        <input 
+        <input
           type="file"
           ref={fileInputRef}
           className="hidden"
@@ -130,10 +195,12 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
 
         {step === 1 && <Step1 formData={formData} setFormData={setFormData} onNext={handleNext} />}
         {step === 2 && <Step2 formData={formData} setFormData={setFormData} />}
-        {step === 3 && <Step3 formData={formData} setFormData={setFormData} calculateSAC={calculateSAC} />}
+        {step === 3 && (
+          <Step3 formData={formData} setFormData={setFormData} calculateSAC={calculateSAC} />
+        )}
         {step === 4 && (
-          <Step4 
-            formData={formData} 
+          <Step4
+            formData={formData}
             setFormData={setFormData}
             addSighting={addSighting}
             removeSighting={removeSighting}
@@ -142,41 +209,52 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
           />
         )}
         {step === 5 && (
-          <Step5 
-            formData={formData} 
+          <Step5
+            formData={formData}
             uploadingProgress={uploadingProgress}
             triggerFileInput={triggerFileInput}
             removeMedia={removeMedia}
           />
         )}
-        {step === 6 && <Step6 formData={formData} setFormData={setFormData} calculateSAC={calculateSAC} />}
+        {step === 6 && (
+          <Step6 formData={formData} setFormData={setFormData} calculateSAC={calculateSAC} />
+        )}
 
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-md z-20">
-          <div className="max-w-md mx-auto">
-            {step < 6 ? (
-              <button 
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/90 backdrop-blur-md z-20 border-t border-slate-100">
+          <div className="max-w-md mx-auto space-y-2">
+            {showStepError && !isStepValid() && (
+              <p className="text-xs text-rose-500 font-medium text-center" role="alert">
+                {stepErrorMessage()}
+              </p>
+            )}
+            {step < TOTAL_STEPS ? (
+              <button
                 onClick={handleNext}
-                disabled={!isStepValid()}
+                aria-disabled={!isStepValid()}
                 className={cn(
-                  "w-full py-5 text-white rounded-2xl font-bold shadow-xl active:scale-[0.98] transition-all",
-                  isStepValid() ? "bg-slate-900 shadow-slate-100" : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                  'w-full min-h-[56px] py-4 text-white rounded-2xl font-bold shadow-xl active:scale-[0.98] transition-all',
+                  isStepValid()
+                    ? 'bg-slate-900 shadow-slate-100'
+                    : 'bg-slate-300 text-white/90 cursor-not-allowed'
                 )}
               >
                 Continue
               </button>
             ) : (
-              <button 
+              <button
                 onClick={handleComplete}
                 disabled={isSubmitting}
                 className={cn(
-                  "w-full py-5 text-white rounded-2xl font-bold shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2",
-                  isSubmitting ? "bg-slate-400 cursor-not-allowed" : "bg-maldives-lagoon shadow-maldives-shallow/50"
+                  'w-full min-h-[56px] py-4 text-white rounded-2xl font-bold shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2',
+                  isSubmitting
+                    ? 'bg-slate-400 cursor-not-allowed'
+                    : 'bg-maldives-lagoon shadow-maldives-shallow/50'
                 )}
               >
                 {isSubmitting ? (
                   <>
                     <Waves className="w-5 h-5 animate-pulse" />
-                    <span>Logging Dive...</span>
+                    <span>Logging dive…</span>
                   </>
                 ) : (
                   'Complete Dive Log'
@@ -186,7 +264,38 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
           </div>
         </div>
       </div>
+
+      {showCancelConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-title"
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center p-6"
+        >
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl">
+            <h2 id="cancel-title" className="text-lg font-display font-bold text-maldives-deep mb-2">
+              Discard this log?
+            </h2>
+            <p className="text-sm text-slate-500 mb-6">
+              Your entries on this dive log will be lost. This can't be undone.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={onCancel}
+                className="w-full min-h-[48px] py-3 bg-rose-500 text-white rounded-2xl font-semibold active:scale-[0.98] transition-transform"
+              >
+                Discard
+              </button>
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="w-full min-h-[48px] py-3 bg-slate-50 text-slate-700 rounded-2xl font-semibold active:scale-[0.98] transition-transform"
+              >
+                Keep editing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

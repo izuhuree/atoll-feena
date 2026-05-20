@@ -274,9 +274,15 @@ export function Profile({ user, onOpenWatch }: ProfileProps) {
                 <div className="bg-white/20 p-2 rounded-xl backdrop-blur-md">
                   <ShieldCheck className="w-5 h-5 text-maldives-turquoise" />
                 </div>
-                <span className="text-[10px] font-bold bg-maldives-lagoon/20 text-maldives-turquoise px-2 py-0.5 rounded-full backdrop-blur-md border border-maldives-turquoise/30">
-                  {profile?.certificationProfile?.agency ? 'ADDED' : 'MISSING'}
-                </span>
+                {profile?.certificationProfile?.agency ? (
+                  <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full backdrop-blur-md border border-emerald-400/30">
+                    VERIFIED
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full backdrop-blur-md border border-amber-400/30">
+                    NEEDS INFO
+                  </span>
+                )}
               </div>
               <p className="font-mono text-maldives-turquoise text-[10px] tracking-[0.18em] mb-1">
                 {profile?.certificationProfile?.certificationNumber || 'CERTIFICATION #'}
@@ -405,19 +411,23 @@ export function Profile({ user, onOpenWatch }: ProfileProps) {
         <section>
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-2">Diver Specs</h3>
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-            <button className="w-full min-h-[56px] p-5 flex items-center justify-between active:bg-slate-50 transition-colors border-b border-slate-50">
+            {/* Units are managed in the Personal Details form above — this row just
+                surfaces the current value with no duplicate edit affordance. */}
+            <div className="w-full min-h-[56px] p-5 flex items-center justify-between border-b border-slate-50">
               <div className="flex items-center gap-4">
                 <Settings className="w-5 h-5 text-slate-400" />
                 <span className="font-semibold">Measurement Units</span>
               </div>
-              <span className="font-bold text-sm text-maldives-lagoon">{profileForm.units === 'metric' ? 'Metric (m, °C)' : 'Imperial (ft, °F)'}</span>
-            </button>
+              <span className="font-bold text-sm text-maldives-lagoon">
+                {profileForm.units === 'metric' ? 'Metric (m, °C)' : 'Imperial (ft, °F)'}
+              </span>
+            </div>
             <button className="w-full min-h-[56px] p-5 flex items-center justify-between active:bg-slate-50 transition-colors">
               <div className="flex items-center gap-4">
                 <CreditCard className="w-5 h-5 text-slate-400" />
                 <span className="font-semibold">Insurance (DAN)</span>
               </div>
-              <span className="font-bold text-sm text-red-500">Add Info</span>
+              <span className="font-bold text-sm text-amber-600">Add info</span>
             </button>
           </div>
         </section>

@@ -1,7 +1,7 @@
 import { Atoll, DiveLog } from '../../types';
-import { cn } from '../../lib/utils';
-import { Check, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { useDiveSites } from '../../hooks/useDiveSites';
+import { ATOLLS } from '../../constants';
 
 interface Step1Props {
   formData: Partial<DiveLog>;
@@ -9,80 +9,131 @@ interface Step1Props {
   onNext: () => void;
 }
 
-export function Step1({ formData, setFormData, onNext }: Step1Props) {
+/**
+ * Step 1 — Site selection.
+ * - Uses the full canonical ATOLLS list (was hard-coded to 3).
+ * - No more silent auto-advance: the user controls the Next button.
+ */
+export function Step1({ formData, setFormData }: Step1Props) {
   const { allSites } = useDiveSites();
+  const isCustom = formData.siteId === 'custom';
+  const needsCustomName = isCustom && !formData.customSiteName?.trim();
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Where did you dive?</h2>
-        <p className="text-slate-500 mb-6 font-medium">Select a site or enter a new one</p>
-        
+        <h2 className="text-2xl font-bold mb-2 text-maldives-deep">Where did you dive?</h2>
+        <p className="text-slate-500 mb-6 font-medium">
+          Pick a known site, or enter your own.
+        </p>
+
         <div className="space-y-4">
-          <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Select Dive Site</label>
+          <label
+            htmlFor="dive-site-select"
+            className="text-xs font-bold uppercase tracking-wider text-slate-500"
+          >
+            Dive Site
+          </label>
           <div className="relative">
-            <select 
-              className="w-full p-5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-maldives-lagoon/20 appearance-none font-bold text-maldives-deep"
+            <select
+              id="dive-site-select"
+              className="w-full p-5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-maldives-lagoon/30 appearance-none font-semibold text-maldives-deep min-h-[56px]"
               value={formData.siteId || ''}
               onChange={(e) => {
-                const selectedSite = allSites.find(s => s.id === e.target.value);
+                const value = e.target.value;
+                if (value === 'custom') {
+                  setFormData({ ...formData, siteId: 'custom', customSiteName: '' });
+                  return;
+                }
+                const selectedSite = allSites.find((s) => s.id === value);
                 if (selectedSite) {
-                  setFormData({ 
-                    ...formData, 
-                    siteId: selectedSite.id, 
-                    atoll: selectedSite.atoll, 
-                    customSiteName: selectedSite.name 
+                  setFormData({
+                    ...formData,
+                    siteId: selectedSite.id,
+                    atoll: selectedSite.atoll,
+                    customSiteName: selectedSite.name,
                   });
-                  setTimeout(onNext, 500);
-                } else if (e.target.value === 'custom') {
-                  setFormData({ ...formData, siteId: 'custom' });
                 }
               }}
             >
-              <option value="" disabled>Choose a site...</option>
-              {allSites.map(site => (
-                <option key={site.id} value={site.id}>{site.name} ({site.atoll})</option>
+              <option value="" disabled>
+                Choose a site…
+              </option>
+              {allSites.map((site) => (
+                <option key={site.id} value={site.id}>
+                  {site.name} ({site.atoll})
+                </option>
               ))}
               <option value="custom">+ Other / New Site</option>
             </select>
             <MapPin className="absolute right-5 top-1/2 -translate-y-1/2 text-maldives-lagoon w-5 h-5 pointer-events-none" />
           </div>
 
-          {(formData.siteId === 'custom' || !formData.siteId) && (
-            <div className="relative animate-in slide-in-from-top-2 duration-300">
-              <input 
+          {isCustom && (
+            <div className="animate-in slide-in-from-top-2 duration-300">
+              <label
+                htmlFor="custom-site-name"
+                className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-2"
+              >
+                Custom Site Name
+              </label>
+              <input
+                id="custom-site-name"
                 type="text"
-                placeholder="Enter Custom Site Name"
-                className="w-full p-5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-maldives-lagoon/20"
+                placeholder="e.g. Banana Reef North"
+                className="w-full p-5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-maldives-lagoon/30 min-h-[56px]"
                 value={formData.customSiteName || ''}
-                onChange={(e) => setFormData({ ...formData, customSiteName: e.target.value, siteId: 'custom' })}
+                onChange={(e) =>
+                  setFormData({ ...formData, customSiteName: e.target.value, siteId: 'custom' })
+                }
+                aria-invalid={needsCustomName}
               />
+              {needsCustomName && (
+                <p className="text-xs text-rose-500 mt-2 font-medium">
+                  Give your custom site a name to continue.
+                </p>
+              )}
             </div>
           )}
         </div>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Atoll</label>
-          <select 
-            className="w-full p-4 bg-slate-50 rounded-2xl border-none appearance-none"
+          <label
+            htmlFor="atoll-select"
+            className="text-xs font-bold uppercase tracking-wider text-slate-500"
+          >
+            Atoll
+          </label>
+          <select
+            id="atoll-select"
+            className="w-full p-4 bg-slate-50 rounded-2xl border-none appearance-none min-h-[52px] font-medium"
             value={formData.atoll}
             onChange={(e) => setFormData({ ...formData, atoll: e.target.value as Atoll })}
           >
-            <option>North Malé</option>
-            <option>South Malé</option>
-            <option>North Ari</option>
+            {ATOLLS.map((atoll) => (
+              <option key={atoll} value={atoll}>
+                {atoll}
+              </option>
+            ))}
           </select>
         </div>
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Island</label>
-          <input 
+          <label
+            htmlFor="island-input"
+            className="text-xs font-bold uppercase tracking-wider text-slate-500"
+          >
+            Island
+          </label>
+          <input
+            id="island-input"
             type="text"
-            placeholder="Resort/Local"
-            className="w-full p-4 bg-slate-50 rounded-2xl border-none"
+            placeholder="Resort / Local"
+            className="w-full p-4 bg-slate-50 rounded-2xl border-none min-h-[52px]"
             value={formData.island}
             onChange={(e) => setFormData({ ...formData, island: e.target.value })}
+            autoCapitalize="words"
           />
         </div>
       </div>

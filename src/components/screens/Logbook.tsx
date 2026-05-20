@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useDives } from '../../hooks/useDives';
 import { 
-  Calendar, 
   MapPin, 
   Clock, 
   TrendingDown, 
@@ -16,13 +15,17 @@ import {
   Building,
   Anchor,
   Play,
-  Image as ImageIcon
+  Image as ImageIcon,
+  PlusCircle
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
-import { DiveLog } from '../../types';
 
-export function Logbook() {
+interface LogbookProps {
+  onLogDive?: () => void;
+}
+
+export function Logbook({ onLogDive }: LogbookProps = {}) {
   const { dives, loading } = useDives();
   const [expandedDiveId, setExpandedDiveId] = useState<string | null>(null);
 
@@ -71,29 +74,50 @@ export function Logbook() {
     <div className="px-6 pt-12">
       <header className="mb-8 flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold mb-1">Logbook</h1>
-          <p className="text-slate-500">{dives.length} Dives Recorded</p>
+          <h1 className="text-3xl font-display font-bold mb-1 text-maldives-deep">Logbook</h1>
+          <p className="text-slate-500 text-sm">
+            {dives.length === 0 ? 'No dives yet' : `${dives.length} ${dives.length === 1 ? 'dive' : 'dives'} recorded`}
+          </p>
         </div>
-        <div className="flex gap-2">
-          <button className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-400 active:scale-95 transition-transform">
-            <Search className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={exportCSV}
-            className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-400 active:scale-95 transition-transform"
-          >
-            <Share2 className="w-5 h-5" />
-          </button>
-        </div>
+        {dives.length > 0 && (
+          <div className="flex gap-2">
+            <button
+              aria-label="Search dives"
+              className="w-11 h-11 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-500 active:scale-95 transition-transform flex items-center justify-center"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+            <button
+              onClick={exportCSV}
+              aria-label="Export as CSV"
+              className="w-11 h-11 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-500 active:scale-95 transition-transform flex items-center justify-center"
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+          </div>
+        )}
       </header>
 
       {dives.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Calendar className="text-slate-300 w-10 h-10" />
+        <div className="text-center py-16 px-4">
+          <div className="w-20 h-20 bg-maldives-shallow/40 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Waves className="text-maldives-lagoon w-10 h-10" />
           </div>
-          <h3 className="font-bold text-lg text-slate-900 mb-2">No Dives Registered</h3>
-          <p className="text-slate-400 text-sm">Your underwater journey starts with your first log.</p>
+          <h3 className="font-display font-bold text-xl text-maldives-deep mb-2">
+            Your logbook is empty
+          </h3>
+          <p className="text-slate-500 text-sm leading-relaxed mb-6 max-w-xs mx-auto">
+            Every dive you log builds your underwater story — depths, sightings, and
+            memories.
+          </p>
+          {onLogDive && (
+            <button
+              onClick={onLogDive}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-maldives-deep text-white rounded-2xl text-sm font-semibold active:scale-[0.98] transition-transform shadow-lg shadow-slate-200"
+            >
+              <PlusCircle className="w-4 h-4" /> Log my first dive
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-8">
