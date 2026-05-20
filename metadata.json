@@ -1,0 +1,8 @@
+{
+  "name": "AtollFeeNa",
+  "description": "A polished scuba-diving logbook for the Maldives, tracking dives, sites, and marine life sightings.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": []
+}

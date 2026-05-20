@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "DiveSite": {
+      "title": "Dive Site",
+      "description": "Details of a specific dive location in the Maldives",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "atoll": { "type": "string" },
+        "islandBase": { "type": "string" },
+        "type": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["beginner", "intermediate", "advanced"] },
+        "depthMin": { "type": "number" },
+        "depthMax": { "type": "number" },
+        "current": { "type": "string" },
+        "marineLifeHighlights": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" },
+        "isProtected": { "type": "boolean" },
+        "regulatedAccess": { "type": "boolean" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "atoll", "difficulty"]
+    },
+    "MarineLife": {
+      "title": "Marine Life",
+      "description": "Species found in the Maldives",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "scientificName": { "type": "string" },
+        "category": { "type": "string", "enum": ["Shark", "Ray", "Fish", "Macro", "Reptile", "Other"] },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "rarity": { "type": "string", "enum": ["Common", "Uncommon", "Rare", "Legendary"] },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "scientificName", "category"]
+    },
+    "DiveLog": {
+      "title": "Dive Log",
+      "description": "A recording of a specific dive",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "diveNumber": { "type": "number" },
+        "date": { "type": "string" },
+        "siteId": { "type": "string" },
+        "customSiteName": { "type": "string" },
+        "maxDepth": { "type": "number" },
+        "duration": { "type": "number" },
+        "notes": { "type": "string" },
+        "rating": { "type": "number" },
+        "marineLife": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "date", "siteId"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User account information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "homeCountry": { "type": "string" },
+        "units": { "type": "string", "enum": ["metric", "imperial"] }
+      },
+      "required": ["uid", "email"]
+    }
+  },
+  "firestore": {
+    "/diveSites/{siteId}": {
+      "schema": "DiveSite",
+      "description": "Global repository of dive sites"
+    },
+    "/marineLife/{speciesId}": {
+      "schema": "MarineLife",
+      "description": "Field guide of marine creatures"
+    },
+    "/diveLogs/{logId}": {
+      "schema": "DiveLog",
+      "description": "User dive logs"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Identity and settings"
+    }
+  }
+}

@@ -1,64 +1,145 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null && request.auth.token.email_verified == true; }
-    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
-    function adminDoc() { return exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
-    function roles() { return adminDoc() ? get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.roles : []; }
-    function hasRole(role) { return signedIn() && role in roles(); }
-    function isAdmin() { return hasRole('admin'); }
-    function kbStaff() { return hasRole('admin') || hasRole('kb_uploader') || hasRole('kb_reviewer'); }
-
-    match /users/{uid} {
-      allow read, create, update, delete: if isOwner(uid);
-      match /fieldGuidePhotos/{photoId} {
-        allow read, write: if isOwner(uid);
-      }
+    // ---------------------------------------------------------
+    // Helper Functions
+    // ---------------------------------------------------------
+    
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
     }
 
-    match /diveLogs/{logId} {
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if signedIn() && resource.data.userId == request.auth.uid;
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // ---------------------------------------------------------
+    // Validation Schemas
+    // ---------------------------------------------------------
+
+    function isValidDiveSite(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.atoll is string && data.atoll.size() > 0 &&
+             data.difficulty in ['beginner', 'intermediate', 'advanced'] &&
+             (data.depthMax == null || data.depthMax is number && data.depthMax >= 0 && data.depthMax <= 100) &&
+             (data.description == null || data.description is string && data.description.size() <= 1000) &&
+             (data.bestSeason == null || data.bestSeason is string && data.bestSeason.size() <= 100) &&
+             (data.isProtected == null || data.isProtected is bool) &&
+             (data.updatedAt == null || data.updatedAt is string) &&
+             (data.createdAt == null || data.createdAt is string);
+    }
+
+    function isValidMarineLife(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.scientificName is string && data.scientificName.size() <= 100 &&
+             data.category in ['Shark', 'Ray', 'Fish', 'Macro', 'Reptile', 'Other'] &&
+             (data.description == null || data.description is string && data.description.size() <= 1000) &&
+             (data.rarity == null || data.rarity in ['Common', 'Uncommon', 'Rare', 'Legendary']) &&
+             (data.updatedAt == null || data.updatedAt is string) &&
+             (data.createdAt == null || data.createdAt is string);
+    }
+
+    function isValidDiveLog(data) {
+      return data.userId == request.auth.uid &&
+             data.date is string && data.date.size() == 10 &&
+             data.siteId is string && data.siteId.size() <= 128 &&
+             (data.rating == null || (data.rating is number && data.rating >= 0 && data.rating <= 5)) &&
+             (data.maxDepth == null || data.maxDepth is number && data.maxDepth >= 4) &&
+             (data.duration == null || data.duration is number && data.duration >= 0) &&
+             (data.notes == null || data.notes is string && data.notes.size() <= 2000) &&
+             (data.marineLife == null || data.marineLife is list && data.marineLife.size() <= 20) &&
+             (data.updatedAt == null || data.updatedAt is string) &&
+             (data.createdAt == null || data.createdAt is string);
+    }
+
+    function isValidUserProfile(data) {
+      return data.uid == request.auth.uid &&
+             (data.email == null || data.email is string && data.email.size() <= 128) &&
+             (data.name == null || data.name is string && data.name.size() <= 128) &&
+             (data.photoURL == null || data.photoURL is string && data.photoURL.size() <= 4096) &&
+             (data.homeCountry == null || data.homeCountry is string && data.homeCountry.size() <= 80) &&
+             (data.certificationProfile == null || isValidCertificationProfile(data.certificationProfile)) &&
+             (data.units == null || data.units in ['metric', 'imperial']) &&
+             (data.updatedAt == null || data.updatedAt is string);
+    }
+
+    function isValidCertificationProfile(data) {
+      return data is map &&
+             data.keys().hasOnly(['agency', 'level', 'certificationNumber', 'issueDate', 'instructorName']) &&
+             (data.agency == null || data.agency is string && data.agency.size() <= 80) &&
+             (data.level == null || data.level is string && data.level.size() <= 120) &&
+             (data.certificationNumber == null || data.certificationNumber is string && data.certificationNumber.size() <= 80) &&
+             (data.issueDate == null || data.issueDate is string && data.issueDate.size() <= 20) &&
+             (data.instructorName == null || data.instructorName is string && data.instructorName.size() <= 128);
+    }
+
+    // ---------------------------------------------------------
+    // Rules
+    // ---------------------------------------------------------
+
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Dive Sites
     match /diveSites/{siteId} {
       allow read: if true;
-      allow create: if signedIn();
-      allow update, delete: if isAdmin();
+      allow create: if isSignedIn() && isValidId(siteId) && isValidDiveSite(incoming()) && incoming().keys().hasAll(['name', 'atoll', 'difficulty']) && incoming().keys().size() >= 3;
+      allow update: if isSignedIn() && isValidId(siteId) && isValidDiveSite(incoming()) && (
+        isAdmin() || (incoming().id == existing().id && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'depthMax', 'difficulty', 'bestSeason', 'isProtected', 'updatedAt']))
+      );
+      allow delete: if isAdmin();
     }
 
+    // Marine Life
     match /marineLife/{speciesId} {
       allow read: if true;
-      allow create: if signedIn();
-      allow update, delete: if isAdmin();
-    }
-
-    match /teamDives/{teamDiveId} {
-      allow read: if signedIn() && request.auth.uid in resource.data.memberIds;
-      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if signedIn() && resource.data.ownerId == request.auth.uid;
-    }
-
-    match /teamDiveParticipants/{participantId} {
-      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create, delete: if signedIn();
-      allow update: if signedIn() && (
-        isAdmin() ||
-        resource.data.userId == request.auth.uid &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'logStatus', 'personalLogId', 'updatedAt'])
+      allow create: if isSignedIn() && isValidId(speciesId) && isValidMarineLife(incoming()) && incoming().keys().hasAll(['name', 'scientificName', 'category']) && incoming().keys().size() >= 3;
+      allow update: if isSignedIn() && isValidId(speciesId) && isValidMarineLife(incoming()) && (
+        isAdmin() || (incoming().id == existing().id && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'category', 'rarity', 'updatedAt']))
       );
+      allow delete: if isAdmin();
     }
 
-    match /admins/{uid} { allow read: if isOwner(uid); allow write: if false; }
-    match /knowledge_documents/{id} { allow read: if kbStaff(); allow write: if false; }
-    match /knowledge_processing_jobs/{id} { allow read: if kbStaff(); allow write: if false; }
-    match /knowledge_document_chunks/{id} { allow read: if kbStaff(); allow write: if false; }
-    match /proposed_data_updates/{id} { allow read: if kbStaff(); allow write: if false; }
-    match /review_decisions/{id} { allow read: if kbStaff(); allow write: if false; }
-    match /knowledge_audit_events/{id} { allow read: if kbStaff(); allow write: if false; }
-    match /user_api_keys/{id} { allow read, write: if false; }
-    match /ai_key_usage/{id} { allow read, write: if false; }
-    match /system/{id} { allow read, write: if false; }
-    match /{document=**} { allow read, write: if false; }
+    // Dive Logs
+    match /diveLogs/{logId} {
+      allow get: if isSignedIn() && isValidId(logId) && isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(logId) && isValidDiveLog(incoming()) && 
+                    incoming().keys().hasAll(['userId', 'date', 'siteId']) && 
+                    incoming().userId == request.auth.uid;
+      allow update: if isOwner(existing().userId) && isValidId(logId) && isValidDiveLog(incoming()) && 
+                    incoming().userId == existing().userId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['date', 'siteId', 'rating', 'maxDepth', 'duration', 'notes', 'marineLife', 'updatedAt']);
+      allow delete: if isOwner(existing().userId) && isValidId(logId);
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      allow read: if isOwner(userId) && isValidId(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming()) && incoming().uid == userId;
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming()) && 
+                    incoming().uid == userId &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['name', 'email', 'photoURL', 'homeCountry', 'units', 'certificationProfile', 'updatedAt']);
+    }
+
   }
 }

@@ -1,59 +1,204 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { User } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db, initializeFirebase, syncUser, watchAuth } from './lib/firebase';
-import { seedSites, seedSpecies } from './lib/reference';
-import { newestFirst, useCollection } from './hooks/useFirebaseCollection';
-import { useRoles } from './hooks/useRoles';
-import type { DiveLog, DiveSite, Species, Tab, TeamDive, UserProfile } from './types';
-import { SignIn, SafetyModal } from './components/AuthScreens';
-import { Shell } from './components/Shell';
-import { Home } from './screens/Home';
-import { QuickLog } from './screens/QuickLog';
-import { Logbook } from './screens/Logbook';
-import { DiveSites, SpeciesGuide } from './screens/SitesSpecies';
-import { Insights, TeamDives } from './screens/TeamInsights';
-import { Profile, Settings } from './screens/ProfileSettings';
-import { KnowledgeBase, UserGuide, WatchPreview } from './screens/KnowledgeGuide';
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { useState, useEffect } from 'react';
+import { auth, syncProfile, isFirebaseConfigured, signInWithGoogle } from './lib/firebase';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { Navigation, Tab } from './components/Navigation';
+import { Home } from './components/screens/Home';
+import { DiveSites } from './components/screens/DiveSites';
+import { QuickLog } from './components/screens/QuickLog';
+import { Logbook } from './components/screens/Logbook';
+import { Profile } from './components/screens/Profile';
+import { Insights } from './components/screens/Insights';
+import { FieldGuide } from './components/screens/FieldGuide';
+import { WatchPreview } from './components/screens/WatchPreview';
+import { UserGuide } from './components/screens/UserGuide';
+import { SignIn } from './components/screens/SignIn';
+import { ShieldAlert } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [tab, setTab] = useState<Tab>('home');
-  const [booting, setBooting] = useState(true);
+  const [currentTab, setCurrentTab] = useState<Tab | 'insights' | 'field-guide' | 'watch'>('home');
+  const [showSafety, setShowSafety] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
   useEffect(() => {
-    let unsub = () => {};
-    initializeFirebase().then(() => { unsub = watchAuth(async (u) => { setUser(u); if (u) setProfile(await syncUser(u)); setBooting(false); }); });
-    return () => unsub();
+    const hasAgreed = localStorage.getItem('feena_safety_agreed');
+    if (!hasAgreed) {
+      setShowSafety(true);
+    }
+
+    if (!auth) {
+      setIsAuthLoading(false);
+      setAuthError('Firebase auth is not initialized.');
+      return;
+    }
+
+    return onAuthStateChanged(auth, async (nextUser) => {
+      // Remove previous anonymous sessions to enforce Google sign-in only.
+      if (nextUser?.isAnonymous) {
+        try {
+          await signOut(auth);
+        } catch (error) {
+          console.error('Failed to clear anonymous session:', error);
+        }
+        setUser(null);
+        setIsAuthLoading(false);
+        return;
+      }
+
+      if (nextUser) {
+        setUser(nextUser);
+        setAuthError(null);
+        try {
+          await syncProfile(nextUser);
+        } catch (error) {
+          console.error('Profile sync failed:', error);
+        }
+      } else {
+        setUser(null);
+      }
+
+      setIsAuthLoading(false);
+    });
   }, []);
-  useEffect(() => {
-    if (!db || !user) return;
-    return onSnapshot(doc(db, 'users', user.uid), (snap) => setProfile(snap.data() as UserProfile));
-  }, [user]);
-  const { roles, isAdmin, canUseKb } = useRoles(user?.uid);
-  useEffect(() => { if (tab === 'settings' && !isAdmin) setTab('profile'); if (tab === 'profile' && isAdmin) setTab('settings'); }, [tab, isAdmin]);
-  const { items: rawLogs } = useCollection<DiveLog>('diveLogs', [], 'userId', user?.uid);
-  const { items: sites } = useCollection<DiveSite>('diveSites', seedSites);
-  const { items: species } = useCollection<Species>('marineLife', seedSpecies);
-  const { items: team } = useCollection<TeamDive>('teamDives', [], undefined, user?.uid);
-  const logs = useMemo(() => newestFirst(rawLogs), [rawLogs]);
-  if (booting) return <div className="grid min-h-screen place-items-center bg-slate-50 font-black text-sky-900">AtollFeeNa</div>;
-  if (!user) return <SignIn />;
-  if (!profile?.safetyAgreedAt) return <SafetyModal uid={user.uid} onDone={() => setProfile({ ...(profile || { uid: user.uid, name: user.displayName || '', email: user.email || '' }), safetyAgreedAt: new Date().toISOString() })} />;
-  const currentProfile = { ...profile, uid: user.uid, roles };
-  return <Shell tab={tab} setTab={setTab} isAdmin={isAdmin} canUseKb={canUseKb}>
-    {tab === 'home' && <Home logs={logs} setTab={setTab} />}
-    {tab === 'quick' && <QuickLog uid={user.uid} logs={logs} sites={sites} species={species} onDone={() => setTab('logbook')} />}
-    {tab === 'logbook' && <Logbook logs={logs} />}
-    {tab === 'sites' && <DiveSites sites={sites} uid={user.uid} isAdmin={isAdmin} />}
-    {tab === 'species' && <SpeciesGuide species={species} uid={user.uid} />}
-    {tab === 'team' && <TeamDives uid={user.uid} name={profile.name} dives={team.filter((d) => d.memberIds?.includes(user.uid) || d.ownerId === user.uid)} logs={logs} onLog={() => setTab('logbook')} />}
-    {tab === 'insights' && <Insights logs={logs} />}
-    {tab === 'profile' && <Profile profile={currentProfile} setTab={setTab} />}
-    {tab === 'settings' && isAdmin && <Settings setTab={setTab} />}
-    {tab === 'kb' && canUseKb && <KnowledgeBase />}
-    {tab === 'kb' && !canUseKb && <UserGuide />}
-    {tab === 'watch' && <WatchPreview />}
-    {tab === 'guide' && <UserGuide />}
-  </Shell>;
+
+  const handleSignIn = async () => {
+    if (!isFirebaseConfigured) {
+      setAuthError('Firebase config missing. Please verify project settings.');
+      return;
+    }
+    setIsSigningIn(true);
+    setAuthError(null);
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error('Google sign-in failed:', error);
+      if (error instanceof Error && 'code' in error) {
+        const authCode = String((error as { code?: string }).code || '');
+        if (authCode === 'auth/operation-not-allowed') {
+          setAuthError('Enable Google sign-in in Firebase Console > Authentication > Sign-in method.');
+        } else if (authCode === 'auth/unauthorized-domain') {
+          setAuthError('This domain is not authorized in Firebase Authentication.');
+        } else if (authCode === 'auth/popup-closed-by-user') {
+          setAuthError('Sign-in popup closed before completion. Please try again.');
+        } else {
+          setAuthError(authCode);
+        }
+      } else {
+        setAuthError('Google sign-in failed. Please try again.');
+      }
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleAgree = () => {
+    localStorage.setItem('feena_safety_agreed', 'true');
+    setShowSafety(false);
+  };
+
+  const renderTab = () => {
+    switch (currentTab) {
+      case 'home': return <Home onLogDive={() => setCurrentTab('quick-log')} user={user} onOpenInsights={() => setCurrentTab('insights')} onOpenGuide={() => setCurrentTab('field-guide')} onNavigate={(t) => setCurrentTab(t as any)} />;
+      case 'sites': return <DiveSites onLogAtSite={() => setCurrentTab('quick-log')} />;
+      case 'quick-log': return <QuickLog onComplete={() => setCurrentTab('logbook')} onCancel={() => setCurrentTab('home')} />;
+      case 'logbook': return <Logbook />;
+      case 'insights': return <Insights onBack={() => setCurrentTab('home')} />;
+      case 'field-guide': return <FieldGuide onBack={() => setCurrentTab('home')} />;
+      case 'user-guide': return <UserGuide onBack={() => setCurrentTab('home')} />;
+      case 'profile': return <Profile user={user} onOpenWatch={() => setCurrentTab('watch')} />;
+      case 'watch': return <WatchPreview onBack={() => setCurrentTab('profile')} />;
+      default: return <Home onLogDive={() => setCurrentTab('quick-log')} user={user} onOpenInsights={() => setCurrentTab('insights')} onOpenGuide={() => setCurrentTab('field-guide')} onNavigate={(t) => setCurrentTab(t as any)} />;
+    }
+  };
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
+        <div className="text-center">
+          <img
+            src="/logo.png"
+            alt="AtollFeeNa logo"
+            className="w-16 h-16 rounded-2xl mx-auto mb-4 border border-slate-100 shadow-sm bg-white"
+          />
+          <p className="text-sm font-semibold text-maldives-deep">Connecting to AtollFeeNa...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <SignIn
+        onSignIn={handleSignIn}
+        isSigningIn={isSigningIn}
+        error={authError}
+        disabled={!isFirebaseConfigured || !auth}
+      />
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-maldives-shallow selection:text-maldives-deep">
+      <AnimatePresence>
+        {showSafety && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-slate-100"
+            >
+              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6 mx-auto">
+                <ShieldAlert className="w-8 h-8 text-red-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-center mb-4 tracking-tight">Safety First</h2>
+              <p className="text-slate-600 text-center text-sm leading-relaxed mb-8">
+                AtollFeeNa is a scuba logbook and planning companion. 
+                <span className="font-semibold block mt-2 text-slate-900">
+                  It is not a certified dive computer, decompression planner, or substitute for training!
+                </span>
+                Always follow your dive computer, tables, and dive professional.
+              </p>
+              <button 
+                onClick={handleAgree}
+                className="w-full py-4 bg-slate-900 text-white rounded-2xl font-semibold active:scale-[0.98] transition-transform shadow-lg shadow-slate-200"
+              >
+                I Understand & Agree
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <main className="pb-32">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            {renderTab()}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+
+      {currentTab !== 'quick-log' && currentTab !== 'watch' && currentTab !== 'field-guide' && currentTab !== 'user-guide' && (
+        <Navigation currentTab={currentTab as any} onTabChange={setCurrentTab as any} />
+      )}
+    </div>
+  );
 }
