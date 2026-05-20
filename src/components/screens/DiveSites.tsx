@@ -3,15 +3,16 @@ import { User } from 'firebase/auth';
 import {
   Search,
   Filter,
-  CircleDot,
   Plus,
   MapPin,
   RotateCcw,
 } from 'lucide-react';
 import { Atoll, DiveSite } from '../../types';
-import { useDiveSites } from '../../hooks/useDiveSites';
 import { useAtolls } from '../../hooks/useAtolls';
 import { useDiveSiteSuggestions } from '../../hooks/useDiveSiteSuggestions';
+import { useDiveSiteMutations } from '../../hooks/useDiveSiteMutations';
+import { useFilteredDiveSites } from '../../hooks/useFilteredDiveSites';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useUserRole } from '../../hooks/useUserRole';
 import { AnimatePresence } from 'motion/react';
 import { DiveSiteForm } from '../dive-sites/DiveSiteForm';
@@ -24,14 +25,28 @@ interface DiveSitesProps {
 }
 
 export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
-  const { allSites, loading, saveSite, deleteSite } = useDiveSites();
+  const { saveSite, deleteSite } = useDiveSiteMutations();
   const { submitSuggestion } = useDiveSiteSuggestions();
   const { canPublishDiveSiteInfo, canEditSketchInstructions } = useUserRole(user);
   const { atolls } = useAtolls();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAtoll, setSelectedAtoll] = useState<Atoll | 'All'>('All');
-  const [selectedIsland, setSelectedIsland] = useState('All');
-  const [selectedType, setSelectedType] = useState('All');
+  const [islandTerm, setIslandTerm] = useState('');
+  const debouncedSearchTerm = useDebouncedValue(searchTerm);
+  const debouncedIslandTerm = useDebouncedValue(islandTerm);
+  const {
+    sites: filteredSites,
+    loading,
+    loadingMore,
+    hasMore,
+    hasFilter,
+    error,
+    loadMore,
+  } = useFilteredDiveSites({
+    atoll: selectedAtoll,
+    islandSearch: debouncedIslandTerm,
+    siteSearch: debouncedSearchTerm,
+  });
   const [isAddingSite, setIsAddingSite] = useState(false);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
@@ -49,38 +64,6 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
 
   const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
 
-  const islandOptions = useMemo(() => {
-    return [...new Set(
-      allSites
-        .filter((site) => selectedAtoll === 'All' || site.atoll === selectedAtoll)
-        .map((site) => site.islandBase)
-        .filter(Boolean)
-    )].sort((a, b) => a.localeCompare(b));
-  }, [allSites, selectedAtoll]);
-
-  const typeOptions = useMemo(() => {
-    return [...new Set(allSites.map((site) => site.type).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b));
-  }, [allSites]);
-
-  const filteredSites = useMemo(() => {
-    return allSites
-      .filter((site) => {
-        const query = searchTerm.trim().toLowerCase();
-        const matchesSearch = !query ||
-          site.name.toLowerCase().includes(query) ||
-          site.atoll.toLowerCase().includes(query) ||
-          site.islandBase?.toLowerCase().includes(query) ||
-          site.type.toLowerCase().includes(query) ||
-          site.marineLifeHighlights.some((life) => life.toLowerCase().includes(query));
-        const matchesAtoll = selectedAtoll === 'All' || site.atoll === selectedAtoll;
-        const matchesIsland = selectedIsland === 'All' || site.islandBase === selectedIsland;
-        const matchesType = selectedType === 'All' || site.type === selectedType;
-        return matchesSearch && matchesAtoll && matchesIsland && matchesType;
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [allSites, searchTerm, selectedAtoll, selectedIsland, selectedType]);
-
   const groupedSites = useMemo(() => {
     return filteredSites.reduce<Record<string, DiveSite[]>>((groups, site) => {
       const letter = site.name[0]?.toUpperCase().match(/[A-Z]/) ? site.name[0].toUpperCase() : '#';
@@ -92,17 +75,8 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
   const activeFilterCount = [
     searchTerm.trim(),
     selectedAtoll !== 'All',
-    selectedIsland !== 'All',
-    selectedType !== 'All',
+    islandTerm.trim(),
   ].filter(Boolean).length;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maldives-lagoon"></div>
-      </div>
-    );
-  }
 
   const handleSave = async () => {
     if (!newSite.name) return;
@@ -167,8 +141,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
   const resetFilters = () => {
     setSearchTerm('');
     setSelectedAtoll('All');
-    setSelectedIsland('All');
-    setSelectedType('All');
+    setIslandTerm('');
     setExpandedSiteId(null);
   };
 
@@ -178,7 +151,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
         <div>
           <h1 className="text-3xl font-display font-bold mb-2 text-maldives-deep">Dive Sites</h1>
           <p className="text-slate-500 text-sm">
-            {filteredSites.length} of {allSites.length} Maldives sites, sorted A-Z
+            Select an atoll, island, or site name to load matching dive sites
           </p>
           {saveNotice && (
             <p className="mt-2 text-xs font-bold text-maldives-lagoon">{saveNotice}</p>
@@ -198,14 +171,14 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search site, island, atoll or marine life"
+              placeholder="Search dive site name"
               className="w-full min-h-[52px] pl-12 pr-4 bg-slate-50 border border-transparent rounded-2xl focus:outline-none focus:ring-2 focus:ring-maldives-lagoon/20"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2">
             <SelectField
               id="atoll-filter"
               label="Atoll"
@@ -213,29 +186,18 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
               value={selectedAtoll}
               onChange={(value) => {
                 setSelectedAtoll(value as Atoll | 'All');
-                setSelectedIsland('All');
                 setExpandedSiteId(null);
               }}
               options={['All', ...atolls.map((atoll) => atoll.name)]}
               allLabel="All Atolls"
             />
-            <SelectField
+            <TextField
               id="island-filter"
-              label="Island"
+              label="Island / Nearby Island"
               icon={<MapPin className="w-4 h-4 text-maldives-lagoon" />}
-              value={selectedIsland}
-              onChange={setSelectedIsland}
-              options={['All', ...islandOptions]}
-              allLabel="All Islands"
-            />
-            <SelectField
-              id="type-filter"
-              label="Site Type"
-              icon={<CircleDot className="w-4 h-4" />}
-              value={selectedType}
-              onChange={setSelectedType}
-              options={['All', ...typeOptions]}
-              allLabel="All Site Types"
+              value={islandTerm}
+              onChange={setIslandTerm}
+              placeholder="Type at least 2 letters"
             />
           </div>
 
@@ -243,7 +205,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
             <p className="text-xs font-semibold text-slate-500">
               {activeFilterCount > 0
                 ? `${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'} applied.`
-                : 'Choose an atoll, then an island, to narrow local dive options.'}
+                : 'Select an atoll, island, or site name to begin.'}
             </p>
             <button
               onClick={resetFilters}
@@ -255,17 +217,38 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
           </div>
         </section>
 
-        <DiveSiteMappingSection sites={filteredSites} totalSites={allSites.length} />
+        <DiveSiteMappingSection sites={filteredSites} hasFilter={hasFilter} />
 
         <div className="mb-4 flex items-end justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon">Directory</p>
-            <h2 className="text-xl font-display font-bold text-maldives-deep">Alphabetical results</h2>
+            <h2 className="text-xl font-display font-bold text-maldives-deep">Filtered results</h2>
           </div>
-          <p className="text-xs font-bold text-slate-400">{filteredSites.length}/{allSites.length} sites</p>
+          <p className="text-xs font-bold text-slate-400">{filteredSites.length} loaded</p>
         </div>
 
         <div className="space-y-6">
+        {!hasFilter && (
+          <div className="rounded-3xl border border-slate-100 bg-white p-8 text-center">
+            <p className="font-bold text-maldives-deep">Select an atoll or search to begin.</p>
+            <p className="mt-2 text-sm text-slate-500">AtollFeeNa loads only the dive sites relevant to your current filter.</p>
+          </div>
+        )}
+
+        {loading && (
+          <div className="space-y-3">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="h-32 animate-pulse rounded-3xl bg-white border border-slate-100" />
+            ))}
+          </div>
+        )}
+
+        {error && (
+          <div className="rounded-3xl border border-rose-100 bg-rose-50 p-6 text-sm font-semibold text-rose-700">
+            Unable to load dive sites for this filter.
+          </div>
+        )}
+
         {Object.entries(groupedSites).map(([letter, sites]) => (
           <section key={letter} aria-labelledby={`sites-${letter}`}>
             <h2 id={`sites-${letter}`} className="sticky top-0 z-10 -mx-4 mb-3 bg-slate-50/95 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
@@ -288,11 +271,21 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
           </section>
         ))}
 
-        {filteredSites.length === 0 && (
+        {hasFilter && !loading && filteredSites.length === 0 && (
           <div className="rounded-3xl border border-slate-100 bg-white p-8 text-center">
             <p className="font-bold text-maldives-deep">No dive sites match these filters.</p>
-            <p className="mt-2 text-sm text-slate-500">Try another atoll, island, type or search term.</p>
+            <p className="mt-2 text-sm text-slate-500">Try another atoll, island, or site name.</p>
           </div>
+        )}
+
+        {hasMore && (
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="w-full min-h-[52px] rounded-2xl bg-maldives-deep px-5 text-sm font-bold text-white disabled:opacity-60"
+          >
+            {loadingMore ? 'Loading...' : 'Load More Sites'}
+          </button>
         )}
       </div>
       </div>
@@ -350,6 +343,43 @@ function SelectField({
             </option>
           ))}
         </select>
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+          {icon}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function TextField({
+  id,
+  label,
+  icon,
+  value,
+  onChange,
+  placeholder,
+}: {
+  id: string;
+  label: string;
+  icon: ReactNode;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={id}
+          type="text"
+          className="w-full min-h-[52px] pl-4 pr-10 bg-slate-50 border border-transparent rounded-2xl focus:outline-none focus:ring-2 focus:ring-maldives-lagoon/20 font-bold text-maldives-deep"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+        />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
           {icon}
         </span>

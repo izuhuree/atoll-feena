@@ -1,0 +1,21 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "diveSites",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "atoll", "order": "ASCENDING" },
+        { "fieldPath": "name", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "diveSites",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "atoll", "order": "ASCENDING" },
+        { "fieldPath": "islandBase", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

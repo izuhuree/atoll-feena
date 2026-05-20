@@ -1,7 +1,8 @@
 import { Atoll, DiveLog } from '../../types';
 import { MapPin } from 'lucide-react';
-import { useDiveSites } from '../../hooks/useDiveSites';
 import { useAtolls } from '../../hooks/useAtolls';
+import { useFilteredDiveSites } from '../../hooks/useFilteredDiveSites';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 
 interface SiteSelectionPanelProps {
   formData: Partial<DiveLog>;
@@ -15,8 +16,13 @@ interface SiteSelectionPanelProps {
  * - No more silent auto-advance: the user controls the Next button.
  */
 export function SiteSelectionPanel({ formData, setFormData }: SiteSelectionPanelProps) {
-  const { allSites } = useDiveSites();
   const { atolls } = useAtolls();
+  const debouncedIsland = useDebouncedValue(formData.island || '');
+  const { sites: matchingSites, hasMore, loadMore, loadingMore } = useFilteredDiveSites({
+    atoll: formData.atoll || 'All',
+    islandSearch: debouncedIsland,
+    siteSearch: '',
+  });
   const isCustom = formData.siteId === 'custom';
   const needsCustomName = isCustom && !formData.customSiteName?.trim();
 
@@ -46,7 +52,7 @@ export function SiteSelectionPanel({ formData, setFormData }: SiteSelectionPanel
                   setFormData({ ...formData, siteId: 'custom', customSiteName: '' });
                   return;
                 }
-                const selectedSite = allSites.find((s) => s.id === value);
+                const selectedSite = matchingSites.find((s) => s.id === value);
                 if (selectedSite) {
                   setFormData({
                     ...formData,
@@ -60,7 +66,7 @@ export function SiteSelectionPanel({ formData, setFormData }: SiteSelectionPanel
               <option value="" disabled>
                 Choose a site…
               </option>
-              {allSites.map((site) => (
+              {matchingSites.map((site) => (
                 <option key={site.id} value={site.id}>
                   {site.name} ({site.atoll})
                 </option>
@@ -69,6 +75,16 @@ export function SiteSelectionPanel({ formData, setFormData }: SiteSelectionPanel
             </select>
             <MapPin className="absolute right-5 top-1/2 -translate-y-1/2 text-maldives-lagoon w-5 h-5 pointer-events-none" />
           </div>
+          {hasMore && (
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="w-full min-h-[44px] rounded-2xl bg-slate-100 text-xs font-bold uppercase tracking-widest text-slate-600"
+            >
+              {loadingMore ? 'Loading...' : 'Load More Sites'}
+            </button>
+          )}
 
           {isCustom && (
             <div className="animate-in slide-in-from-top-2 duration-300">

@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useDives } from '../../hooks/useDives';
-import { useDiveSites } from '../../hooks/useDiveSites';
 
 interface HomeProps {
   user: User | null;
@@ -31,7 +30,6 @@ interface HomeProps {
  */
 export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate }: HomeProps) {
   const { dives } = useDives();
-  const { allSites } = useDiveSites();
   const lastDive = dives[0];
   const firstName = user?.displayName?.split(' ')[0];
   const loggedSpeciesCount = new Set(dives.flatMap((dive) => dive.marineLife || [])).size;
@@ -159,7 +157,7 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
             <MapPin className="w-5 h-5 text-rose-400" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-maldives-deep leading-none">{allSites.length}</p>
+            <p className="text-2xl font-bold text-maldives-deep leading-none">Map</p>
             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mt-1">
               Sites
             </p>

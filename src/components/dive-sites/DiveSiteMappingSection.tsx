@@ -15,11 +15,13 @@ const DiveSiteClusterMap = lazy(() =>
 
 interface DiveSiteMappingSectionProps {
   sites: DiveSite[];
-  totalSites: number;
+  hasFilter: boolean;
 }
 
-export function DiveSiteMappingSection({ sites, totalSites }: DiveSiteMappingSectionProps) {
+export function DiveSiteMappingSection({ sites, hasFilter }: DiveSiteMappingSectionProps) {
   const mappedCount = sites.filter((site) => site.coordinates).length;
+
+  if (!hasFilter) return null;
 
   return (
     <section
@@ -38,10 +40,9 @@ export function DiveSiteMappingSection({ sites, totalSites }: DiveSiteMappingSec
             The map and directory use the same filtered database records.
           </p>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="grid grid-cols-2 gap-2 text-center">
           <Stat label="shown" value={sites.length} />
           <Stat label="mapped" value={mappedCount} />
-          <Stat label="total" value={totalSites} />
         </div>
       </header>
 
