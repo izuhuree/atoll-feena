@@ -6,11 +6,26 @@ service firebase.storage {
       return request.auth != null && request.auth.token.email_verified == true;
     }
 
+    function isAdmin() {
+      // Mirror Firestore admin rule: requires a doc at /admins/{uid}
+      return isSignedIn() &&
+             firestore.exists(/databases/atollfeena/documents/admins/$(request.auth.uid));
+    }
+
     match /users/{userId}/profile/{fileName} {
       allow read: if isSignedIn() && request.auth.uid == userId;
       allow write: if isSignedIn() &&
                    request.auth.uid == userId &&
                    request.resource.size < 5 * 1024 * 1024 &&
+                   request.resource.contentType.matches('image/.*');
+    }
+
+    // AI-generated dive-site sketches. Publicly readable so non-admins see
+    // the cached image; only admins can (re)generate and upload.
+    match /divesite-sketches/{siteId} {
+      allow read: if true;
+      allow write: if isAdmin() &&
+                   request.resource.size < 4 * 1024 * 1024 &&
                    request.resource.contentType.matches('image/.*');
     }
 

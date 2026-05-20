@@ -18,9 +18,9 @@ import { Atoll, DiveSite } from '../../types';
 import { useDiveSites } from '../../hooks/useDiveSites';
 import { ATOLLS } from '../../constants';
 import { motion, AnimatePresence } from 'motion/react';
-import { DiveSiteMap } from '../dive-sites/DiveSiteMap';
 import { DiveSiteForm } from '../dive-sites/DiveSiteForm';
 import { DiveSiteMappingSection } from '../dive-sites/DiveSiteMappingSection';
+import { SiteVisualsPanel } from '../dive-sites/SiteVisualsPanel';
 
 interface DiveSitesProps {
   onLogAtSite: (siteId: string) => void;
@@ -283,8 +283,8 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
                         )}
                       </div>
 
-                      {/* Dive Profile Visual */}
-                      <DiveSiteMap site={site} />
+                      {/* Locator map + AI / procedural site sketch */}
+                      <SiteVisualsPanel site={site} />
 
                       <div className="flex flex-wrap gap-1.5 mb-6">
                         {site.marineLifeHighlights.map(life => (

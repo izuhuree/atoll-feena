@@ -44,6 +44,8 @@ export interface DiveSite {
   protectedStatus?: string;
   localName?: string;
   notes?: string;
+  /** Cached AI-generated top-down sketch URL (Firebase Storage). */
+  aiSketchUrl?: string;
 }
 
 export interface UserProfile {
