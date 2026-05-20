@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, ChangeEvent, MouseEvent } from 'react';
-import { MarineLife } from '../../data/marineLife';
+import type { MarineLife } from '../../data/marineLife';
 import { 
   Search, 
   ChevronLeft, 
@@ -109,7 +109,10 @@ export function FieldGuide({ onBack }: FieldGuideProps) {
     deleteLife(id);
   };
 
-  const categories = ['All', 'Shark', 'Ray', 'Fish', 'Reptile', 'Macro', 'Other'];
+  const categories = [
+    'All',
+    ...Array.from(new Set(allLife.map((life) => life.category))).sort(),
+  ];
 
   const filteredLife = allLife.filter(life => {
     const matchesSearch = life.name.toLowerCase().includes(searchTerm.toLowerCase()) || 

@@ -2,13 +2,13 @@ import { DiveLog } from '../../types';
 import { cn } from '../../lib/utils';
 import { Clock, Thermometer, Star, Check, Waves, Image as ImageIcon } from 'lucide-react';
 
-interface Step6Props {
+interface DiveReviewPanelProps {
   formData: Partial<DiveLog>;
   setFormData: (data: Partial<DiveLog>) => void;
   calculateSAC: () => number | undefined;
 }
 
-export function Step6({ formData, setFormData, calculateSAC }: Step6Props) {
+export function DiveReviewPanel({ formData, setFormData, calculateSAC }: DiveReviewPanelProps) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -37,6 +37,19 @@ export function Step6({ formData, setFormData, calculateSAC }: Step6Props) {
           </div>
         </div>
 
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white/5 rounded-xl px-4 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest opacity-50">Current</p>
+            <p className="text-sm font-bold capitalize mt-1">{formData.current || 'Unknown'}</p>
+          </div>
+          <div className="bg-white/5 rounded-xl px-4 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest opacity-50">Surge</p>
+            <p className="text-sm font-bold capitalize mt-1">
+              {formData.siteConditions?.surge || 'Unknown'}
+            </p>
+          </div>
+        </div>
+
          <div className="flex justify-between items-center py-2 bg-white/5 rounded-xl px-4">
            <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">SAC RATE</span>
            <span className="font-mono text-maldives-turquoise font-bold">{calculateSAC() || '0.00'} L/min</span>
@@ -51,6 +64,27 @@ export function Step6({ formData, setFormData, calculateSAC }: Step6Props) {
             </div>
           </div>
         )}
+
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-white/5 rounded-xl px-3 py-3 text-center">
+            <p className="text-lg font-bold text-maldives-turquoise">
+              {formData.speciesObservations?.length || 0}
+            </p>
+            <p className="text-[8px] font-bold uppercase tracking-widest opacity-50">Species</p>
+          </div>
+          <div className="bg-white/5 rounded-xl px-3 py-3 text-center">
+            <p className="text-lg font-bold text-maldives-turquoise">
+              {formData.reefHealthObservations?.length || 0}
+            </p>
+            <p className="text-[8px] font-bold uppercase tracking-widest opacity-50">Reef</p>
+          </div>
+          <div className="bg-white/5 rounded-xl px-3 py-3 text-center">
+            <p className="text-lg font-bold text-maldives-turquoise">
+              {formData.debrisObservations?.length || 0}
+            </p>
+            <p className="text-[8px] font-bold uppercase tracking-widest opacity-50">Debris</p>
+          </div>
+        </div>
 
         <div className="flex gap-2">
           {[1, 2, 3, 4, 5].map(star => (

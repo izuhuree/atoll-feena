@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "check:file-length": "node scripts/enforce-file-length.mjs",
-    "lint": "npm run check:file-length && tsc --noEmit"
+    "lint": "npm run check:file-length && tsc --noEmit",
+    "seed:firestore": "tsx scripts/seed-firestore-data.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { KIND_META } from '../../data/mapDiveSites';
+import { KIND_META } from '../../lib/siteKindMeta';
 import { BathymetryExplainer } from './BathymetryExplainer';
 
 /**

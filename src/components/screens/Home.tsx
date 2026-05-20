@@ -8,9 +8,14 @@ import {
   Info,
   HelpCircle,
   PlusCircle,
+  ShieldAlert,
+  Leaf,
+  Database,
+  Anchor,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useDives } from '../../hooks/useDives';
+import { useDiveSites } from '../../hooks/useDiveSites';
 
 interface HomeProps {
   user: User | null;
@@ -26,8 +31,15 @@ interface HomeProps {
  */
 export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate }: HomeProps) {
   const { dives } = useDives();
+  const { allSites } = useDiveSites();
   const lastDive = dives[0];
   const firstName = user?.displayName?.split(' ')[0];
+  const loggedSpeciesCount = new Set(dives.flatMap((dive) => dive.marineLife || [])).size;
+  const reefRecordCount = dives.reduce(
+    (total, dive) =>
+      total + (dive.reefHealthObservations?.length || 0) + (dive.debrisObservations?.length || 0),
+    0
+  );
 
   return (
     <div className="px-6 pt-12 pb-24">
@@ -69,7 +81,7 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
           whileTap={{ scale: 0.98 }}
           onClick={onLogDive}
           aria-label="Log today's dive"
-          className="col-span-2 bg-maldives-lagoon rounded-[2rem] p-7 flex flex-col justify-between shadow-lg shadow-maldives-lagoon/30 text-white min-h-[170px] relative overflow-hidden group text-left"
+          className="col-span-2 bg-maldives-deep rounded-[2rem] p-7 flex flex-col justify-between shadow-lg shadow-maldives-deep/20 text-white min-h-[188px] relative overflow-hidden group text-left"
         >
           <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:rotate-12 transition-transform">
             <Waves className="w-24 h-24" />
@@ -78,14 +90,32 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
             <Waves className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-display font-bold text-2xl leading-tight">
-              Log Today's
-              <br />
-              Adventure
-            </h3>
-            <p className="text-white/80 text-xs mt-2 font-medium">
-              Record depth, time &amp; sightings
+            <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest mb-2">
+              Every dive counts
             </p>
+            <h3 className="font-display font-bold text-2xl leading-tight max-w-[240px]">
+              Log your dive. Improve the next one.
+            </h3>
+            <p className="text-white/80 text-xs mt-3 font-medium max-w-[260px]">
+              Capture conditions, hazards, sightings and reef signals in one useful record.
+            </p>
+          </div>
+        </motion.button>
+
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={() => onNavigate?.('sites')}
+          aria-label="Open dive site conditions"
+          className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm flex flex-col justify-between min-h-[150px] text-left"
+        >
+          <div className="w-11 h-11 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-3">
+            <ShieldAlert className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-display font-bold text-lg text-maldives-deep leading-tight">
+              Site Safety
+            </h3>
+            <p className="text-slate-500 text-xs mt-1">Recent conditions &amp; hazards</p>
           </div>
         </motion.button>
 
@@ -95,37 +125,20 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
           aria-label="Open field guide"
           className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm flex flex-col justify-between min-h-[150px] text-left"
         >
-          <div className="w-11 h-11 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 mb-3">
-            <Search className="w-5 h-5" />
+          <div className="w-11 h-11 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-3">
+            <Leaf className="w-5 h-5" />
           </div>
           <div>
             <h3 className="font-display font-bold text-lg text-maldives-deep leading-tight">
-              Field Guide
+              Reef Record
             </h3>
-            <p className="text-slate-500 text-xs mt-1">Identify marine life</p>
-          </div>
-        </motion.button>
-
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={onOpenInsights}
-          aria-label="Open dive stats"
-          className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm flex flex-col justify-between min-h-[150px] text-left"
-        >
-          <div className="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500 mb-3">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-display font-bold text-lg text-maldives-deep leading-tight">
-              Your Stats
-            </h3>
-            <p className="text-slate-500 text-xs mt-1">Trends &amp; performance</p>
+            <p className="text-slate-500 text-xs mt-1">Species, coral &amp; debris</p>
           </div>
         </motion.button>
       </div>
 
       {/* Quick counters */}
-      <div className="grid grid-cols-2 gap-4 mb-10">
+      <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-slate-50/70 rounded-3xl p-5 flex items-center gap-4">
           <div className="w-11 h-11 rounded-2xl bg-white shadow-sm flex items-center justify-center">
             <Award className="w-5 h-5 text-maldives-turquoise" />
@@ -146,13 +159,48 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
             <MapPin className="w-5 h-5 text-rose-400" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-maldives-deep leading-none">22</p>
+            <p className="text-2xl font-bold text-maldives-deep leading-none">{allSites.length}</p>
             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mt-1">
-              Atolls
+              Sites
             </p>
           </div>
         </button>
       </div>
+
+      <section className="mb-10 grid grid-cols-3 gap-2">
+        <button
+          onClick={onOpenInsights}
+          className="bg-white border border-slate-100 rounded-2xl p-3 min-h-[88px] text-left active:scale-[0.98] transition-transform"
+        >
+          <TrendingUp className="w-4 h-4 text-maldives-lagoon mb-2" />
+          <p className="text-lg font-bold text-maldives-deep leading-none">{loggedSpeciesCount}</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-1">
+            Species
+          </p>
+        </button>
+        <button
+          onClick={onOpenInsights}
+          className="bg-white border border-slate-100 rounded-2xl p-3 min-h-[88px] text-left active:scale-[0.98] transition-transform"
+        >
+          <Database className="w-4 h-4 text-emerald-600 mb-2" />
+          <p className="text-lg font-bold text-maldives-deep leading-none">{reefRecordCount}</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-1">
+            Reef Signals
+          </p>
+        </button>
+        <button
+          onClick={() => onNavigate?.('sites')}
+          className="bg-white border border-slate-100 rounded-2xl p-3 min-h-[88px] text-left active:scale-[0.98] transition-transform"
+        >
+          <Anchor className="w-4 h-4 text-amber-600 mb-2" />
+          <p className="text-lg font-bold text-maldives-deep leading-none">
+            {lastDive?.siteConditions?.hazards?.length || 0}
+          </p>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-1">
+            Last Hazards
+          </p>
+        </button>
+      </section>
 
       {/* Recent Activity */}
       <section className="mb-10">
@@ -200,6 +248,34 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
                 ))}
               </div>
             )}
+            {lastDive.siteConditions && (
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="bg-slate-50 rounded-xl px-3 py-2">
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                    Vis
+                  </p>
+                  <p className="text-xs font-bold text-maldives-deep">
+                    {lastDive.siteConditions.visibilityMeters || '--'}m
+                  </p>
+                </div>
+                <div className="bg-slate-50 rounded-xl px-3 py-2">
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                    Current
+                  </p>
+                  <p className="text-xs font-bold text-maldives-deep capitalize">
+                    {lastDive.siteConditions.current}
+                  </p>
+                </div>
+                <div className="bg-slate-50 rounded-xl px-3 py-2">
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                    Surge
+                  </p>
+                  <p className="text-xs font-bold text-maldives-deep capitalize">
+                    {lastDive.siteConditions.surge || '--'}
+                  </p>
+                </div>
+              </div>
+            )}
           </button>
         ) : (
           <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm text-center">
@@ -210,7 +286,7 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
               Your logbook is empty
             </h3>
             <p className="text-slate-500 text-sm mb-6 leading-relaxed">
-              Log your first dive to start tracking depth, sightings and progress.
+              Start with one useful record: conditions for divers, observations for the reef.
             </p>
             <button
               onClick={onLogDive}
@@ -222,24 +298,27 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
         )}
       </section>
 
-      {/* Maldives Map Preview */}
+      {/* Site Intelligence Preview */}
       <button
         onClick={() => onNavigate?.('sites')}
-        className="block w-full mb-10 overflow-hidden relative rounded-3xl bg-slate-200 h-44 active:scale-[0.99] transition-transform"
+        className="block w-full mb-10 overflow-hidden relative rounded-3xl bg-white border border-slate-100 p-6 active:scale-[0.99] transition-transform text-left shadow-sm"
         aria-label="Explore Maldives dive sites"
       >
-        <img
-          src="https://picsum.photos/seed/maldives-map/600/400"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover opacity-70 mix-blend-overlay"
-          referrerPolicy="no-referrer"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-maldives-deep/60 to-transparent" />
-        <div className="relative z-10 h-full flex flex-col items-center justify-end pb-6 text-center">
-          <h3 className="text-white font-display font-bold text-xl drop-shadow-md">
-            Explore Maldives
-          </h3>
-          <p className="text-white/90 text-sm drop-shadow-md">40+ dive sites mapped</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon mb-2">
+              Shared diver intelligence
+            </p>
+            <h3 className="text-maldives-deep font-display font-bold text-xl">
+              Plan with better local knowledge
+            </h3>
+            <p className="text-slate-500 text-sm mt-2 leading-relaxed">
+              Browse Maldives sites with depth, current, season and protected-area context.
+            </p>
+          </div>
+          <div className="w-12 h-12 bg-maldives-shallow/40 rounded-2xl flex items-center justify-center shrink-0">
+            <MapPin className="w-6 h-6 text-maldives-lagoon" />
+          </div>
         </div>
       </button>
 

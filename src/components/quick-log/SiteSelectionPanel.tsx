@@ -1,9 +1,9 @@
 import { Atoll, DiveLog } from '../../types';
 import { MapPin } from 'lucide-react';
 import { useDiveSites } from '../../hooks/useDiveSites';
-import { ATOLLS } from '../../constants';
+import { useAtolls } from '../../hooks/useAtolls';
 
-interface Step1Props {
+interface SiteSelectionPanelProps {
   formData: Partial<DiveLog>;
   setFormData: (data: Partial<DiveLog>) => void;
   onNext: () => void;
@@ -11,11 +11,12 @@ interface Step1Props {
 
 /**
  * Step 1 — Site selection.
- * - Uses the full canonical ATOLLS list (was hard-coded to 3).
+ * - Uses the Firestore-backed atoll list.
  * - No more silent auto-advance: the user controls the Next button.
  */
-export function Step1({ formData, setFormData }: Step1Props) {
+export function SiteSelectionPanel({ formData, setFormData }: SiteSelectionPanelProps) {
   const { allSites } = useDiveSites();
+  const { atolls } = useAtolls();
   const isCustom = formData.siteId === 'custom';
   const needsCustomName = isCustom && !formData.customSiteName?.trim();
 
@@ -112,9 +113,10 @@ export function Step1({ formData, setFormData }: Step1Props) {
             value={formData.atoll}
             onChange={(e) => setFormData({ ...formData, atoll: e.target.value as Atoll })}
           >
-            {ATOLLS.map((atoll) => (
-              <option key={atoll} value={atoll}>
-                {atoll}
+            {atolls.length === 0 && <option value="">Atolls not configured</option>}
+            {atolls.map((atoll) => (
+              <option key={atoll.id} value={atoll.name}>
+                {atoll.name}
               </option>
             ))}
           </select>

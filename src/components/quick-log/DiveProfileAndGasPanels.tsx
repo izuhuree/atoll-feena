@@ -1,12 +1,15 @@
-import { DiveLog, CurrentStrength } from '../../types';
+import { DiveLog } from '../../types';
 import { cn } from '../../lib/utils';
+import { useObservationCatalog } from '../../hooks/useObservationCatalog';
 
-interface Step2Props {
+interface DiveProfilePanelProps {
   formData: Partial<DiveLog>;
   setFormData: (data: Partial<DiveLog>) => void;
 }
 
-export function Step2({ formData, setFormData }: Step2Props) {
+export function DiveProfilePanel({ formData, setFormData }: DiveProfilePanelProps) {
+  const { catalog } = useObservationCatalog();
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -72,7 +75,19 @@ export function Step2({ formData, setFormData }: Step2Props) {
             type="number"
             className="w-full p-4 bg-slate-50 rounded-2xl border-none"
             value={formData.waterTemp}
-            onChange={(e) => setFormData({ ...formData, waterTemp: Number(e.target.value) })}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              setFormData({
+                ...formData,
+                waterTemp: value,
+                siteConditions: {
+                  ...formData.siteConditions,
+                  current: formData.current || 'unknown',
+                  waterTempC: value,
+                  reportTime: formData.siteConditions?.reportTime || new Date().toISOString(),
+                },
+              });
+            }}
           />
         </div>
         <div className="space-y-2">
@@ -81,7 +96,19 @@ export function Step2({ formData, setFormData }: Step2Props) {
             type="number"
             className="w-full p-4 bg-slate-50 rounded-2xl border-none"
             value={formData.visibility}
-            onChange={(e) => setFormData({ ...formData, visibility: Number(e.target.value) })}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              setFormData({
+                ...formData,
+                visibility: value,
+                siteConditions: {
+                  ...formData.siteConditions,
+                  current: formData.current || 'unknown',
+                  visibilityMeters: value,
+                  reportTime: formData.siteConditions?.reportTime || new Date().toISOString(),
+                },
+              });
+            }}
           />
         </div>
       </div>
@@ -89,10 +116,23 @@ export function Step2({ formData, setFormData }: Step2Props) {
       <div className="space-y-4">
         <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Current Strength</label>
         <div className="flex gap-2 flex-wrap">
-          {(['none', 'mild', 'moderate', 'strong'] as CurrentStrength[]).map(s => (
+          {catalog.currentStrength.length === 0 && (
+            <p className="text-xs text-slate-400">Current options are not configured yet.</p>
+          )}
+          {catalog.currentStrength.map(s => (
             <button
               key={s}
-              onClick={() => setFormData({ ...formData, current: s })}
+              onClick={() =>
+                setFormData({
+                  ...formData,
+                  current: s,
+                  siteConditions: {
+                    ...formData.siteConditions,
+                    current: s,
+                    reportTime: formData.siteConditions?.reportTime || new Date().toISOString(),
+                  },
+                })
+              }
               className={cn(
                 "px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all",
                 formData.current === s ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"
@@ -103,17 +143,145 @@ export function Step2({ formData, setFormData }: Step2Props) {
           ))}
         </div>
       </div>
+
+      <div className="space-y-5 border-t border-slate-100 pt-6">
+        <div>
+          <h3 className="font-bold text-maldives-deep">Site Conditions</h3>
+          <p className="text-xs text-slate-500 mt-1">
+            These details help future divers read recent site safety.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Surge</label>
+          <div className="flex gap-2 flex-wrap">
+            {catalog.surge.length === 0 && (
+              <p className="text-xs text-slate-400">Surge options are not configured yet.</p>
+            )}
+            {catalog.surge.map((surge) => (
+              <button
+                key={surge}
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    siteConditions: {
+                      ...formData.siteConditions,
+                      current: formData.current || 'unknown',
+                      surge,
+                      reportTime: formData.siteConditions?.reportTime || new Date().toISOString(),
+                    },
+                  })
+                }
+                className={cn(
+                  'px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all',
+                  formData.siteConditions?.surge === surge
+                    ? 'bg-maldives-lagoon text-white'
+                    : 'bg-slate-100 text-slate-500'
+                )}
+              >
+                {surge}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Entry / Exit
+          </label>
+          <select
+            className="w-full p-4 bg-slate-50 rounded-2xl border-none appearance-none font-medium capitalize"
+            value={formData.siteConditions?.entryExitDifficulty || 'manageable'}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                siteConditions: {
+                  ...formData.siteConditions,
+                  current: formData.current || 'unknown',
+                  entryExitDifficulty: e.target.value as any,
+                  reportTime: formData.siteConditions?.reportTime || new Date().toISOString(),
+                },
+              })
+            }
+          >
+            {catalog.entryExitDifficulty.length === 0 && (
+              <option value="">Entry / exit options not configured</option>
+            )}
+            {catalog.entryExitDifficulty.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Hazards Noted
+          </label>
+          <div className="flex gap-2 flex-wrap">
+            {catalog.hazards.length === 0 && (
+              <p className="text-xs text-slate-400">Hazard options are not configured yet.</p>
+            )}
+            {catalog.hazards.map((hazard) => {
+              const hazards = formData.siteConditions?.hazards || [];
+              const selected = hazards.includes(hazard);
+              return (
+                <button
+                  key={hazard}
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      siteConditions: {
+                        ...formData.siteConditions,
+                        current: formData.current || 'unknown',
+                        hazards: selected
+                          ? hazards.filter((item) => item !== hazard)
+                          : [...hazards, hazard],
+                        reportTime: formData.siteConditions?.reportTime || new Date().toISOString(),
+                      },
+                    })
+                  }
+                  className={cn(
+                    'px-3 py-2.5 rounded-xl text-xs font-bold capitalize transition-all',
+                    selected ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-500'
+                  )}
+                >
+                  {hazard}
+                </button>
+              );
+            })}
+          </div>
+          <input
+            type="text"
+            placeholder="Optional hazard note"
+            className="w-full p-4 bg-slate-50 rounded-2xl border-none"
+            value={formData.siteConditions?.hazardNotes || ''}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                siteConditions: {
+                  ...formData.siteConditions,
+                  current: formData.current || 'unknown',
+                  hazardNotes: e.target.value,
+                  reportTime: formData.siteConditions?.reportTime || new Date().toISOString(),
+                },
+              })
+            }
+          />
+        </div>
+      </div>
     </div>
   );
 }
 
-interface Step3Props {
+interface GasPressurePanelProps {
   formData: Partial<DiveLog>;
   setFormData: (data: Partial<DiveLog>) => void;
   calculateSAC: () => number | undefined;
 }
 
-export function Step3({ formData, setFormData, calculateSAC }: Step3Props) {
+export function GasPressurePanel({ formData, setFormData, calculateSAC }: GasPressurePanelProps) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>

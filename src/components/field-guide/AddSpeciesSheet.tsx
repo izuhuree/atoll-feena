@@ -1,6 +1,6 @@
 import { AlertCircle, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { MarineLife } from '../../data/marineLife';
+import type { MarineLife } from '../../data/marineLife';
 
 interface AddSpeciesSheetProps {
   isOpen: boolean;

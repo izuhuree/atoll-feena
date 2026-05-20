@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
-import { MAP_DIVE_SITES, KIND_META, DiveSiteKind } from '../../data/mapDiveSites';
+import { DiveSite } from '../../types';
+import { useDiveSites } from '../../hooks/useDiveSites';
+import { DiveSiteKind, getDiveSiteKind, KIND_META } from '../../lib/siteKindMeta';
 
 /**
  * Builds a small coloured DivIcon for each dive-site kind. We render a real
@@ -41,8 +43,13 @@ const getIcon = (kind: DiveSiteKind): L.DivIcon => {
  * react-leaflet-cluster.
  */
 export function DiveSiteClusterMap() {
-  // Memoise so the marker array isn't recreated on every parent render.
-  const sites = useMemo(() => MAP_DIVE_SITES, []);
+  const { allSites } = useDiveSites();
+  const sites = useMemo(
+    () => allSites.filter((site): site is DiveSite & { coordinates: { lat: number; lng: number } } =>
+      typeof site.coordinates?.lat === 'number' && typeof site.coordinates?.lng === 'number'
+    ),
+    [allSites]
+  );
 
   return (
     <MapContainer
@@ -69,8 +76,8 @@ export function DiveSiteClusterMap() {
         {sites.map((site) => (
           <Marker
             key={site.id}
-            position={[site.lat, site.lng]}
-            icon={getIcon(site.kind)}
+            position={[site.coordinates.lat, site.coordinates.lng]}
+            icon={getIcon(getDiveSiteKind(site.type))}
           >
             <Popup>
               <div className="space-y-1">
@@ -78,17 +85,18 @@ export function DiveSiteClusterMap() {
                   {site.name}
                 </p>
                 <p className="text-[11px] uppercase tracking-widest text-slate-500">
-                  {site.atoll} Atoll · {KIND_META[site.kind].label}
+                  {site.atoll} Atoll · {KIND_META[getDiveSiteKind(site.type)].label}
                 </p>
                 <p className="text-[11px] text-slate-600">
                   <span className="font-semibold">Depth:</span> {site.depthMin}–
                   {site.depthMax} m
                 </p>
                 <p className="text-[11px] text-slate-600">
-                  <span className="font-semibold">Best for:</span> {site.bestFor}
+                  <span className="font-semibold">Look for:</span>{' '}
+                  {site.marineLifeHighlights.slice(0, 3).join(', ') || 'Site conditions'}
                 </p>
                 <p className="text-[11px] text-maldives-lagoon font-semibold">
-                  Citizen science: {site.citizenScienceApp}
+                  Citizen science: safety and reef observations
                 </p>
               </div>
             </Popup>

@@ -4,10 +4,10 @@ import { cn } from '../../lib/utils';
 import { useDives } from '../../hooks/useDives';
 import { useQuickLogForm } from '../../hooks/useQuickLogForm';
 import { useFileUpload } from '../../hooks/useFileUpload';
-import { Step1 } from '../quick-log/Step1';
-import { Step2, Step3 } from '../quick-log/Step23';
-import { Step4, Step5 } from '../quick-log/Step45';
-import { Step6 } from '../quick-log/Step6';
+import { SiteSelectionPanel } from '../quick-log/SiteSelectionPanel';
+import { DiveProfilePanel, GasPressurePanel } from '../quick-log/DiveProfileAndGasPanels';
+import { ObservationsPanel, DiveMediaPanel } from '../quick-log/ObservationsAndMediaPanels';
+import { DiveReviewPanel } from '../quick-log/DiveReviewPanel';
 
 interface QuickLogProps {
   onComplete: () => void;
@@ -46,6 +46,11 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
         ...(prev.media || []),
         { id, type, url, description: species ? `Photo of ${species}` : undefined } as any,
       ],
+      speciesObservations: species
+        ? (prev.speciesObservations || []).map((item) =>
+            item.speciesName === species ? { ...item, hasMediaEvidence: true } : item
+          )
+        : prev.speciesObservations,
     }));
     (fileInputRef.current as any).speciesTag = null;
   });
@@ -55,6 +60,17 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
       setFormData({
         ...formData,
         marineLife: [...(formData.marineLife || []), species],
+        speciesObservations: [
+          ...(formData.speciesObservations || []),
+          {
+            id: `species-${Date.now()}`,
+            speciesName: species,
+            count: 1,
+            confidence: 'medium',
+            hasMediaEvidence: false,
+            sensitiveLocation: false,
+          },
+        ],
       });
     }
   };
@@ -63,6 +79,9 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
     setFormData({
       ...formData,
       marineLife: formData.marineLife?.filter((l) => l !== species),
+      speciesObservations: formData.speciesObservations?.filter(
+        (item) => item.speciesName !== species
+      ),
     });
   };
 
@@ -138,6 +157,18 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
         customSiteName: formData.customSiteName || 'Leisure Dive',
         syncStatus: 'synced',
         media: formData.media || [],
+        siteConditions: {
+          ...formData.siteConditions,
+          current: formData.current || 'unknown',
+          visibilityMeters: formData.visibility,
+          waterTempC: formData.waterTemp,
+          reportTime: new Date().toISOString(),
+        },
+        observationMetadata: formData.observationMetadata || {
+          source: 'diver',
+          verificationStatus: 'unverified',
+          privacy: 'public aggregate',
+        },
       } as any);
       onComplete();
     } catch (error) {
@@ -193,13 +224,13 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
           onChange={handleFileSelect}
         />
 
-        {step === 1 && <Step1 formData={formData} setFormData={setFormData} onNext={handleNext} />}
-        {step === 2 && <Step2 formData={formData} setFormData={setFormData} />}
+        {step === 1 && <SiteSelectionPanel formData={formData} setFormData={setFormData} onNext={handleNext} />}
+        {step === 2 && <DiveProfilePanel formData={formData} setFormData={setFormData} />}
         {step === 3 && (
-          <Step3 formData={formData} setFormData={setFormData} calculateSAC={calculateSAC} />
+          <GasPressurePanel formData={formData} setFormData={setFormData} calculateSAC={calculateSAC} />
         )}
         {step === 4 && (
-          <Step4
+          <ObservationsPanel
             formData={formData}
             setFormData={setFormData}
             addSighting={addSighting}
@@ -209,7 +240,7 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
           />
         )}
         {step === 5 && (
-          <Step5
+          <DiveMediaPanel
             formData={formData}
             uploadingProgress={uploadingProgress}
             triggerFileInput={triggerFileInput}
@@ -217,7 +248,7 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
           />
         )}
         {step === 6 && (
-          <Step6 formData={formData} setFormData={setFormData} calculateSAC={calculateSAC} />
+          <DiveReviewPanel formData={formData} setFormData={setFormData} calculateSAC={calculateSAC} />
         )}
 
         <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/90 backdrop-blur-md z-20 border-t border-slate-100">

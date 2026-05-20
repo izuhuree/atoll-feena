@@ -11,6 +11,23 @@ export type DiveType =
   | 'drift' | 'manta' | 'whale shark' | 'shark' | 'training' | 'photography';
 
 export type CurrentStrength = 'none' | 'mild' | 'moderate' | 'strong' | 'very strong' | 'unknown';
+export type SurgeStrength = 'none' | 'mild' | 'moderate' | 'strong' | 'unknown';
+export type EntryExitDifficulty = 'easy' | 'manageable' | 'challenging' | 'hazardous' | 'unknown';
+export type ObservationConfidence = 'low' | 'medium' | 'high';
+export type ReefHealthIndicator =
+  | 'healthy coral'
+  | 'bleaching'
+  | 'broken coral'
+  | 'algae overgrowth'
+  | 'crown-of-thorns'
+  | 'sedimentation';
+export type DebrisType =
+  | 'plastic'
+  | 'fishing line'
+  | 'ghost net'
+  | 'metal'
+  | 'glass'
+  | 'other';
 
 export interface CertificationProfile {
   agency: string;
@@ -59,6 +76,51 @@ export interface UserProfile {
   units: 'metric' | 'imperial';
 }
 
+export interface DiveSiteConditionReport {
+  visibilityMeters?: number;
+  current: CurrentStrength;
+  surge?: SurgeStrength;
+  waterTempC?: number;
+  entryExitDifficulty?: EntryExitDifficulty;
+  hazards?: string[];
+  hazardNotes?: string;
+  reportTime: string;
+}
+
+export interface SpeciesObservation {
+  id: string;
+  speciesName: string;
+  scientificName?: string;
+  category?: string;
+  count?: number;
+  confidence: ObservationConfidence;
+  hasMediaEvidence?: boolean;
+  sensitiveLocation?: boolean;
+}
+
+export interface ReefHealthObservation {
+  id: string;
+  indicator: ReefHealthIndicator;
+  severity: 'low' | 'moderate' | 'high';
+  notes?: string;
+  hasMediaEvidence?: boolean;
+}
+
+export interface DebrisObservation {
+  id: string;
+  type: DebrisType;
+  amount: 'single item' | 'few items' | 'many items';
+  removed?: boolean;
+  notes?: string;
+  hasMediaEvidence?: boolean;
+}
+
+export interface ObservationMetadata {
+  source: 'diver';
+  verificationStatus: 'unverified' | 'needs review' | 'verified';
+  privacy: 'public aggregate' | 'hide diver identity' | 'sensitive location';
+}
+
 export interface DiveLog {
   id: string;
   userId: string;
@@ -75,6 +137,11 @@ export interface DiveLog {
   waterTemp?: number;
   visibility?: number;
   current: CurrentStrength;
+  siteConditions?: DiveSiteConditionReport;
+  speciesObservations?: SpeciesObservation[];
+  reefHealthObservations?: ReefHealthObservation[];
+  debrisObservations?: DebrisObservation[];
+  observationMetadata?: ObservationMetadata;
   entryType: 'boat' | 'shore' | 'jetty';
   diveTypes: DiveType[];
   gasType: string;

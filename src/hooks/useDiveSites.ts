@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react';
 import { DiveSite } from '../types';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
-import { SEED_SITES } from '../constants';
 
 export function useDiveSites() {
-  const [sites, setSites] = useState<DiveSite[]>(SEED_SITES);
+  const [sites, setSites] = useState<DiveSite[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,19 +15,7 @@ export function useDiveSites() {
     const q = query(collection(db, 'diveSites'), orderBy('name'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const dbDocs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as DiveSite));
-      
-      // Merge: Start with SEED_SITES, then overwrite with DB info if it exists, then add DB entries not in SEED
-      const mergedMap = new Map<string, DiveSite>();
-      
-      // 1. Add seeds
-      SEED_SITES.forEach(site => mergedMap.set(site.id, site));
-      
-      // 2. Add/Overwrite from DB
-      dbDocs.forEach(site => mergedMap.set(site.id, site));
-      
-      const mergedSites = Array.from(mergedMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-      
-      setSites(mergedSites);
+      setSites(dbDocs);
       setLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'diveSites');

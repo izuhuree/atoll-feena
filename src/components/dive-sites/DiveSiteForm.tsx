@@ -1,8 +1,8 @@
 import { AlertCircle, ShieldCheck, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Atoll, DiveSite } from '../../types';
-import { ATOLLS } from '../../constants';
 import { cn } from '../../lib/utils';
+import { useAtolls } from '../../hooks/useAtolls';
 
 interface DiveSiteFormProps {
   newSite: Partial<DiveSite>;
@@ -24,6 +24,8 @@ export function DiveSiteForm({
   onSave,
   editing,
 }: DiveSiteFormProps) {
+  const { atolls } = useAtolls();
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -90,9 +92,10 @@ export function DiveSiteForm({
                     setNewSite({ ...newSite, atoll: e.target.value as Atoll })
                   }
                 >
-                  {ATOLLS.map((atoll) => (
-                    <option key={atoll} value={atoll}>
-                      {atoll}
+                  {atolls.length === 0 && <option value="">Atolls not configured</option>}
+                  {atolls.map((atoll) => (
+                    <option key={atoll.id} value={atoll.name}>
+                      {atoll.name}
                     </option>
                   ))}
                 </select>

@@ -1,9 +1,6 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { User, signOut } from 'firebase/auth';
-import { auth, isAdmin as checkAdmin, db } from '../../lib/firebase';
-import { SEED_SITES } from '../../constants';
-import { MARINE_LIFE_DATABASE } from '../../data/marineLife';
-import { doc, setDoc } from 'firebase/firestore';
+import { auth } from '../../lib/firebase';
 import {
   Settings,
   ShieldCheck,
@@ -13,8 +10,6 @@ import {
   CreditCard,
   History,
   LifeBuoy,
-  Database,
-  RefreshCw,
   Camera,
   Save,
   PencilLine,
@@ -37,11 +32,9 @@ const emptyCertification: CertificationProfile = {
 };
 
 export function Profile({ user, onOpenWatch }: ProfileProps) {
-  const [isSyncing, setIsSyncing] = useState(false);
   const [isEditingCert, setIsEditingCert] = useState(false);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isAdmin = checkAdmin();
 
   const { profile, isLoading, isSaving, error, saveProfile, saveCertificationProfile, uploadProfilePhoto } = useUserProfile(user);
 
@@ -127,42 +120,6 @@ export function Profile({ user, onOpenWatch }: ProfileProps) {
     } finally {
       URL.revokeObjectURL(localUrl);
       e.target.value = '';
-    }
-  };
-
-  const syncSeedData = async () => {
-    if (!isAdmin || isSyncing || !db) return;
-    setIsSyncing(true);
-    try {
-      for (const site of SEED_SITES) {
-        await setDoc(
-          doc(db, 'diveSites', site.id),
-          {
-            ...site,
-            createdBy: 'system',
-            createdAt: new Date().toISOString(),
-          },
-          { merge: true }
-        );
-      }
-
-      for (const life of MARINE_LIFE_DATABASE) {
-        await setDoc(
-          doc(db, 'marineLife', life.id),
-          {
-            ...life,
-            createdBy: 'system',
-            createdAt: new Date().toISOString(),
-          },
-          { merge: true }
-        );
-      }
-      setStatusMessage('Seed data synced to Firestore.');
-    } catch (seedError) {
-      console.error('Seeding failed', seedError);
-      setStatusMessage('Seeding failed. Check console.');
-    } finally {
-      setIsSyncing(false);
     }
   };
 
@@ -388,15 +345,6 @@ export function Profile({ user, onOpenWatch }: ProfileProps) {
         <section>
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-2">Support</h3>
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-            {isAdmin && (
-              <button onClick={syncSeedData} disabled={isSyncing} className="w-full min-h-[56px] p-5 flex items-center justify-between active:bg-slate-50 transition-colors border-b border-slate-50">
-                <div className="flex items-center gap-4">
-                  <Database className="w-5 h-5 text-maldives-lagoon" />
-                  <span className="font-semibold">Sync Seed Data to Cloud</span>
-                </div>
-                {isSyncing ? <RefreshCw className="w-4 h-4 animate-spin text-slate-400" /> : <span className="text-[10px] font-bold bg-maldives-lagoon/10 text-maldives-lagoon px-2 py-0.5 rounded-full uppercase tracking-widest">Admin</span>}
-              </button>
-            )}
             <button className="w-full min-h-[56px] p-5 flex items-center gap-4 active:bg-slate-50 transition-colors">
               <LifeBuoy className="w-5 h-5 text-slate-400" />
               <span className="font-semibold">Local Emergency Info</span>

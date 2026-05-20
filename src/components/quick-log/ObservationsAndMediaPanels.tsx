@@ -3,8 +3,9 @@ import { DiveLog } from '../../types';
 import { Search, Plus, Trash2, Camera, Film, Play, Image as ImageIcon, CameraOff } from 'lucide-react';
 import { useMarineLife } from '../../hooks/useMarineLife';
 import { cn } from '../../lib/utils';
+import { useObservationCatalog } from '../../hooks/useObservationCatalog';
 
-interface Step4Props {
+interface ObservationsPanelProps {
   formData: Partial<DiveLog>;
   setFormData: (data: Partial<DiveLog>) => void;
   addSighting: (s: string) => void;
@@ -13,11 +14,12 @@ interface Step4Props {
   removeMedia: (id: string) => void;
 }
 
-export function Step4({ 
+export function ObservationsPanel({ 
   formData, setFormData, 
   addSighting, removeSighting, triggerSightingPhoto, removeMedia
-}: Step4Props) {
+}: ObservationsPanelProps) {
   const { allLife } = useMarineLife();
+  const { catalog } = useObservationCatalog();
   const [userPhotos, setUserPhotos] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -45,7 +47,27 @@ export function Step4({
             className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-maldives-lagoon/20 appearance-none font-bold text-maldives-deep"
             onChange={(e) => {
               if (e.target.value) {
+                const life = allLife.find((item) => item.name === e.target.value);
                 addSighting(e.target.value);
+                if (life && !formData.speciesObservations?.some((item) => item.speciesName === life.name)) {
+                  setFormData({
+                    ...formData,
+                    marineLife: [...(formData.marineLife || []), life.name],
+                    speciesObservations: [
+                      ...(formData.speciesObservations || []),
+                      {
+                        id: `species-${Date.now()}`,
+                        speciesName: life.name,
+                        scientificName: life.scientificName,
+                        category: life.category,
+                        count: 1,
+                        confidence: 'medium',
+                        hasMediaEvidence: false,
+                        sensitiveLocation: life.rarity === 'Rare' || life.rarity === 'Legendary',
+                      },
+                    ],
+                  });
+                }
                 e.target.value = '';
               }
             }}
@@ -108,7 +130,16 @@ export function Step4({
                     </button>
                   )}
                   <button 
-                    onClick={() => removeSighting(species)}
+                    onClick={() => {
+                      removeSighting(species);
+                      setFormData({
+                        ...formData,
+                        marineLife: formData.marineLife?.filter((l) => l !== species),
+                        speciesObservations: formData.speciesObservations?.filter(
+                          (item) => item.speciesName !== species
+                        ),
+                      });
+                    }}
                     className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-300 rounded-xl hover:text-red-400 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -127,6 +158,102 @@ export function Step4({
             </p>
           </div>
         )}
+      </div>
+
+      <div className="space-y-6 border-t border-slate-50 pt-6">
+        <div>
+          <h3 className="font-bold text-maldives-deep">Reef Record</h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Quick structured notes for coral health and conservation signals.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Coral / Reef Health
+          </label>
+          <div className="flex gap-2 flex-wrap">
+            {catalog.reefHealth.length === 0 && (
+              <p className="text-xs text-slate-400">Reef health options are not configured yet.</p>
+            )}
+            {catalog.reefHealth.map((indicator) => {
+              const selected = formData.reefHealthObservations?.some(
+                (item) => item.indicator === indicator
+              );
+              return (
+                <button
+                  key={indicator}
+                  onClick={() => {
+                    const observations = formData.reefHealthObservations || [];
+                    setFormData({
+                      ...formData,
+                      reefHealthObservations: selected
+                        ? observations.filter((item) => item.indicator !== indicator)
+                        : [
+                            ...observations,
+                            {
+                              id: `reef-${Date.now()}`,
+                              indicator,
+                              severity: 'moderate',
+                              hasMediaEvidence: false,
+                            },
+                          ],
+                    });
+                  }}
+                  className={cn(
+                    'px-3 py-2.5 rounded-xl text-xs font-bold capitalize transition-all',
+                    selected ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                  )}
+                >
+                  {indicator}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Debris / Impact
+          </label>
+          <div className="flex gap-2 flex-wrap">
+            {catalog.debris.length === 0 && (
+              <p className="text-xs text-slate-400">Debris options are not configured yet.</p>
+            )}
+            {catalog.debris.map((type) => {
+              const selected = formData.debrisObservations?.some((item) => item.type === type);
+              return (
+                <button
+                  key={type}
+                  onClick={() => {
+                    const observations = formData.debrisObservations || [];
+                    setFormData({
+                      ...formData,
+                      debrisObservations: selected
+                        ? observations.filter((item) => item.type !== type)
+                        : [
+                            ...observations,
+                            {
+                              id: `debris-${Date.now()}`,
+                              type,
+                              amount: 'few items',
+                              removed: false,
+                              hasMediaEvidence: false,
+                            },
+                          ],
+                    });
+                  }}
+                  className={cn(
+                    'px-3 py-2.5 rounded-xl text-xs font-bold capitalize transition-all',
+                    selected ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-500'
+                  )}
+                >
+                  {type}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4 pt-4 border-t border-slate-50">
@@ -160,14 +287,14 @@ export function Step4({
   );
 }
 
-interface Step5Props {
+interface DiveMediaPanelProps {
   formData: Partial<DiveLog>;
   uploadingProgress: Record<string, number>;
   triggerFileInput: (type: 'image' | 'video') => void;
   removeMedia: (id: string) => void;
 }
 
-export function Step5({ formData, uploadingProgress, triggerFileInput, removeMedia }: Step5Props) {
+export function DiveMediaPanel({ formData, uploadingProgress, triggerFileInput, removeMedia }: DiveMediaPanelProps) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -242,4 +369,3 @@ export function Step5({ formData, uploadingProgress, triggerFileInput, removeMed
     </div>
   );
 }
-

@@ -218,6 +218,67 @@ export function Logbook({ onLogDive }: LogbookProps = {}) {
                         </div>
                       </div>
 
+                      {dive.siteConditions && (
+                        <div className="bg-maldives-shallow/10 rounded-2xl p-4 border border-maldives-shallow/20">
+                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+                            Site Safety Report
+                          </p>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase">Surge</p>
+                              <p className="font-bold capitalize">
+                                {dive.siteConditions.surge || 'Unknown'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase">Entry / Exit</p>
+                              <p className="font-bold capitalize">
+                                {dive.siteConditions.entryExitDifficulty || 'Unknown'}
+                              </p>
+                            </div>
+                          </div>
+                          {(dive.siteConditions.hazards?.length || 0) > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-3">
+                              {dive.siteConditions.hazards?.map((hazard) => (
+                                <span
+                                  key={hazard}
+                                  className="bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[10px] font-bold capitalize"
+                                >
+                                  {hazard}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {((dive.reefHealthObservations?.length || 0) > 0 ||
+                        (dive.debrisObservations?.length || 0) > 0) && (
+                        <div className="bg-slate-50 rounded-2xl p-4">
+                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+                            Reef Record
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {dive.reefHealthObservations?.map((item) => (
+                              <span
+                                key={item.id}
+                                className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg text-[10px] font-bold capitalize"
+                              >
+                                {item.indicator}
+                              </span>
+                            ))}
+                            {dive.debrisObservations?.map((item) => (
+                              <span
+                                key={item.id}
+                                className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg text-[10px] font-bold capitalize"
+                              >
+                                {item.type}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {(dive.buddyNames?.length || 0) > 0 && (
                         <div className="flex items-start gap-3">
                           <Users className="w-4 h-4 text-slate-400 mt-0.5" />

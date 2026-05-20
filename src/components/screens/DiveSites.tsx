@@ -16,7 +16,7 @@ import {
 import { cn } from '../../lib/utils';
 import { Atoll, DiveSite } from '../../types';
 import { useDiveSites } from '../../hooks/useDiveSites';
-import { ATOLLS } from '../../constants';
+import { useAtolls } from '../../hooks/useAtolls';
 import { motion, AnimatePresence } from 'motion/react';
 import { DiveSiteForm } from '../dive-sites/DiveSiteForm';
 import { DiveSiteMappingSection } from '../dive-sites/DiveSiteMappingSection';
@@ -28,6 +28,7 @@ interface DiveSitesProps {
 
 export function DiveSites({ onLogAtSite }: DiveSitesProps) {
   const { allSites, loading, saveSite, deleteSite } = useDiveSites();
+  const { atolls } = useAtolls();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAtoll, setSelectedAtoll] = useState<Atoll | 'All'>('All');
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
@@ -54,10 +55,6 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
     const matchesAtoll = selectedAtoll === 'All' || site.atoll === selectedAtoll;
     return matchesSearch && matchesAtoll;
   });
-
-  // Canonical 22-atoll list plus an "All" filter option — keeps the filter,
-  // add-site form, and quick-select picker consistent.
-  const atolls = ['All', ...ATOLLS] as const;
 
   const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
 
@@ -150,8 +147,8 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
             }}
           >
             <option value="All">All Atolls</option>
-            {atolls.filter(a => a !== 'All').map(atoll => (
-              <option key={atoll} value={atoll}>{atoll}</option>
+            {atolls.map(atoll => (
+              <option key={atoll.id} value={atoll.name}>{atoll.name}</option>
             ))}
           </select>
           <Filter className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />

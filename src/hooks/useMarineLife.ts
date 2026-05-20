@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { MarineLife, MARINE_LIFE_DATABASE } from '../data/marineLife';
+import type { MarineLife } from '../data/marineLife';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 
 export function useMarineLife() {
-  const [lifeRecords, setLifeRecords] = useState<MarineLife[]>(MARINE_LIFE_DATABASE);
+  const [lifeRecords, setLifeRecords] = useState<MarineLife[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -15,18 +15,7 @@ export function useMarineLife() {
     const q = query(collection(db, 'marineLife'), orderBy('name'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const dbDocs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as MarineLife));
-      
-      const mergedMap = new Map<string, MarineLife>();
-      
-      // 1. Add static base
-      MARINE_LIFE_DATABASE.forEach(life => mergedMap.set(life.id, life));
-      
-      // 2. Add/Overwrite from DB
-      dbDocs.forEach(life => mergedMap.set(life.id, life));
-      
-      const mergedLife = Array.from(mergedMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-      
-      setLifeRecords(mergedLife);
+      setLifeRecords(dbDocs);
       setLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'marineLife');
