@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+.env.local
+firebase-applet-config.json
+public/firebase-applet-config.json
+functions/lib
+functions/node_modules
+*.log
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts

@@ -1,0 +1,14 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function owner(uid) { return signedIn() && request.auth.uid == uid; }
+    function max(sizeMb) { return request.resource.size < sizeMb * 1024 * 1024; }
+    match /users/{uid}/profile/{fileName} { allow read, write: if owner(uid) && max(5); }
+    match /users/{uid}/field-guide/{fileName} { allow read, write: if owner(uid) && max(5); }
+    match /users/{uid}/dive-media/{fileName} { allow read, write: if owner(uid) && max(100); }
+    match /reference-data/{fileName} { allow read: if true; allow write: if false; }
+    match /knowledge-documents/{uid}/{documentId}/{version}/{fileName} { allow read, write: if false; }
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}
