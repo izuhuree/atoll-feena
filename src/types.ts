@@ -37,6 +37,16 @@ export interface CertificationProfile {
   instructorName?: string;
 }
 
+export type UserRole =
+  | 'recreational-diver'
+  | 'verified-contributor'
+  | 'dive-professional'
+  | 'dive-centre-manager'
+  | 'marine-science-reviewer'
+  | 'platform-admin';
+
+export type DiveSiteSuggestionStatus = 'pending' | 'approved' | 'rejected';
+
 export interface DiveSite {
   id: string;
   name: string;
@@ -66,8 +76,12 @@ export interface DiveSite {
   sourceAtoll?: string;
   dataQuality?: 'name-atoll-only' | 'feature-tagged' | 'detailed';
   importedAt?: string;
+  sketchInstructions?: string;
+  sketchInstructionsUpdatedAt?: string;
   /** Cached AI-generated top-down sketch URL (Firebase Storage). */
   aiSketchUrl?: string;
+  aiSketchPrompt?: string;
+  aiSketchGeneratedAt?: string;
 }
 
 export interface UserProfile {
@@ -75,6 +89,7 @@ export interface UserProfile {
   name: string;
   email: string;
   photoURL?: string;
+  role?: UserRole;
   homeCountry?: string;
   certificationProfile?: CertificationProfile;
   emergencyContact?: string;
@@ -176,4 +191,19 @@ export interface DiveLog {
     id: string;
   }>;
   syncStatus: 'synced' | 'pending';
+}
+
+export interface DiveSiteEditSuggestion {
+  id: string;
+  siteId?: string;
+  siteName: string;
+  atoll: Atoll;
+  proposedDescription?: string;
+  proposedSite?: Partial<DiveSite>;
+  status: DiveSiteSuggestionStatus;
+  submittedBy: string;
+  submittedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  reviewerNotes?: string;
 }

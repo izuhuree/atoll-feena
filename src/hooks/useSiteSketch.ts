@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { GoogleGenAI } from '@google/genai';
+import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { db, storage, isAdmin, auth } from '../lib/firebase';
+import { db, storage, auth } from '../lib/firebase';
 import { DiveSite } from '../types';
 import { buildSketchPrompt } from '../lib/sketchPrompt';
 
@@ -28,7 +29,7 @@ export function useSiteSketch(site: DiveSite) {
   const [status, setStatus] = useState<Status>('idle');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const canGenerate = isAdmin();
+  const [canGenerate, setCanGenerate] = useState(false);
 
   // Initial fetch of any previously-cached URL.
   useEffect(() => {
@@ -55,6 +56,27 @@ export function useSiteSketch(site: DiveSite) {
     };
   }, [site.id]);
 
+  useEffect(() => {
+    if (!db || !auth) {
+      setCanGenerate(false);
+      return;
+    }
+
+    return onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setCanGenerate(false);
+        return;
+      }
+
+      getDoc(doc(db, 'admins', user.uid))
+        .then((snap) => setCanGenerate(snap.exists()))
+        .catch((err) => {
+          console.error('useSiteSketch.admin', err);
+          setCanGenerate(false);
+        });
+    });
+  }, []);
+
   const generate = useCallback(async () => {
     if (!canGenerate) {
       setError('Only admins can generate AI sketches.');
@@ -77,6 +99,7 @@ export function useSiteSketch(site: DiveSite) {
     try {
       const ai = new GoogleGenAI({ apiKey });
       const prompt = buildSketchPrompt(site);
+      const generatedAt = new Date().toISOString();
 
       // Imagen 3 returns base64-encoded PNG bytes (no data URL prefix).
       const result = await ai.models.generateImages({
@@ -99,7 +122,7 @@ export function useSiteSketch(site: DiveSite) {
         customMetadata: {
           generatedBy: auth?.currentUser?.uid ?? 'unknown',
           model: SKETCH_MODEL,
-          generatedAt: new Date().toISOString(),
+          generatedAt,
         },
       });
 
@@ -108,7 +131,12 @@ export function useSiteSketch(site: DiveSite) {
       // Persist the URL back on the dive-site doc so non-admins see it too.
       await setDoc(
         doc(db, 'diveSites', site.id),
-        { aiSketchUrl: publicUrl, updatedAt: new Date().toISOString() },
+        {
+          aiSketchUrl: publicUrl,
+          aiSketchPrompt: prompt,
+          aiSketchGeneratedAt: generatedAt,
+          updatedAt: generatedAt,
+        },
         { merge: true }
       );
 

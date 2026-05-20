@@ -1,4 +1,5 @@
 import { ReactNode, useMemo, useState } from 'react';
+import { User } from 'firebase/auth';
 import {
   Search,
   Filter,
@@ -10,23 +11,29 @@ import {
 import { Atoll, DiveSite } from '../../types';
 import { useDiveSites } from '../../hooks/useDiveSites';
 import { useAtolls } from '../../hooks/useAtolls';
+import { useDiveSiteSuggestions } from '../../hooks/useDiveSiteSuggestions';
+import { useUserRole } from '../../hooks/useUserRole';
 import { AnimatePresence } from 'motion/react';
 import { DiveSiteForm } from '../dive-sites/DiveSiteForm';
 import { DiveSiteMappingSection } from '../dive-sites/DiveSiteMappingSection';
 import { DiveSiteCard } from '../dive-sites/DiveSiteCard';
 
 interface DiveSitesProps {
+  user: User | null;
   onLogAtSite: (siteId: string) => void;
 }
 
-export function DiveSites({ onLogAtSite }: DiveSitesProps) {
+export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
   const { allSites, loading, saveSite, deleteSite } = useDiveSites();
+  const { submitSuggestion } = useDiveSiteSuggestions();
+  const { canPublishDiveSiteInfo, canEditSketchInstructions } = useUserRole(user);
   const { atolls } = useAtolls();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAtoll, setSelectedAtoll] = useState<Atoll | 'All'>('All');
   const [selectedIsland, setSelectedIsland] = useState('All');
   const [selectedType, setSelectedType] = useState('All');
   const [isAddingSite, setIsAddingSite] = useState(false);
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
   const [newSite, setNewSite] = useState<Partial<DiveSite>>({
     atoll: 'North Malé',
@@ -97,7 +104,7 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
     );
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!newSite.name) return;
     const siteToSave: DiveSite = {
       id: editingSiteId || `custom-${Date.now()}`,
@@ -109,13 +116,29 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
       depthMax: newSite.depthMax as number,
       current: newSite.current as DiveSite['current'],
       description: newSite.description || '',
+      sketchInstructions: newSite.sketchInstructions || newSite.description || '',
+      sketchInstructionsUpdatedAt: newSite.sketchInstructionsUpdatedAt,
       marineLifeHighlights: newSite.marineLifeHighlights || [],
       bestSeason: newSite.bestSeason,
       isProtected: newSite.isProtected,
       regulatedAccess: newSite.regulatedAccess,
       ...newSite
     } as DiveSite;
-    saveSite(siteToSave);
+    if (canPublishDiveSiteInfo) {
+      await saveSite(siteToSave);
+      setSaveNotice('Dive site updated.');
+    } else {
+      await submitSuggestion(
+        {
+          id: siteToSave.id,
+          name: siteToSave.name,
+          atoll: siteToSave.atoll,
+          description: siteToSave.description,
+        },
+        editingSiteId || undefined
+      );
+      setSaveNotice('Suggestion submitted for review.');
+    }
     setIsAddingSite(false);
     setEditingSiteId(null);
     setNewSite({
@@ -157,6 +180,9 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
           <p className="text-slate-500 text-sm">
             {filteredSites.length} of {allSites.length} Maldives sites, sorted A-Z
           </p>
+          {saveNotice && (
+            <p className="mt-2 text-xs font-bold text-maldives-lagoon">{saveNotice}</p>
+          )}
         </div>
         <button 
           onClick={() => setIsAddingSite(true)}
@@ -254,6 +280,7 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
                   onToggle={toggleExpand}
                   onEdit={startEditing}
                   onDelete={deleteSite}
+                  canDelete={canPublishDiveSiteInfo}
                   onLogAtSite={onLogAtSite}
                 />
               ))}
@@ -278,6 +305,9 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
             onClose={() => setIsAddingSite(false)}
             onSave={handleSave}
             editing={!!editingSiteId}
+            canEditStructured={canPublishDiveSiteInfo}
+            canEditSketchInstructions={canEditSketchInstructions}
+            submitLabel={canPublishDiveSiteInfo ? undefined : 'Submit Suggestion'}
           />
         )}
       </AnimatePresence>

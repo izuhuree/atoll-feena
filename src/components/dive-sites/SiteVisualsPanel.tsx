@@ -67,9 +67,14 @@ export function SiteVisualsPanel({ site }: SiteVisualsPanelProps) {
 
       {tab === 'sketch' && (
         <div className="flex items-center justify-between gap-3 p-3 border-t border-slate-100 bg-white">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            {imageUrl ? 'AI sketch · cached' : 'Procedural fallback'}
-          </p>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              {imageUrl ? 'AI sketch · cached' : 'Procedural fallback'}
+            </p>
+            <p className="text-[10px] font-semibold text-slate-400">
+              {site.sketchInstructions?.trim() ? 'Using sketch instructions' : 'Using site description'}
+            </p>
+          </div>
           {canGenerate && (
             <button
               onClick={generate}

@@ -107,7 +107,7 @@ export default function App() {
   const renderTab = () => {
     switch (currentTab) {
       case 'home': return <Home onLogDive={() => setCurrentTab('quick-log')} user={user} onOpenInsights={() => setCurrentTab('insights')} onOpenGuide={() => setCurrentTab('field-guide')} onNavigate={(t) => setCurrentTab(t as any)} />;
-      case 'sites': return <DiveSites onLogAtSite={() => setCurrentTab('quick-log')} />;
+      case 'sites': return <DiveSites user={user} onLogAtSite={() => setCurrentTab('quick-log')} />;
       case 'quick-log': return <QuickLog onComplete={() => setCurrentTab('logbook')} onCancel={() => setCurrentTab('home')} />;
       case 'logbook': return <Logbook onLogDive={() => setCurrentTab('quick-log')} />;
       case 'insights': return <Insights onBack={() => setCurrentTab('home')} onLogDive={() => setCurrentTab('quick-log')} />;

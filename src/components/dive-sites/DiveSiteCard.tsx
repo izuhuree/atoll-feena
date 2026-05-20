@@ -20,6 +20,7 @@ interface DiveSiteCardProps {
   onToggle: (id: string) => void;
   onEdit: (site: DiveSite) => void;
   onDelete: (id: string) => void;
+  canDelete: boolean;
   onLogAtSite: (siteId: string) => void;
 }
 
@@ -29,6 +30,7 @@ export function DiveSiteCard({
   onToggle,
   onEdit,
   onDelete,
+  canDelete,
   onLogAtSite,
 }: DiveSiteCardProps) {
   const isCustom = site.id.startsWith('custom-');
@@ -57,16 +59,16 @@ export function DiveSiteCard({
             )}>
               {site.difficulty}
             </span>
-            {isCustom && (
-              <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
-                <button onClick={() => onEdit(site)} className="p-2 text-slate-300 hover:text-maldives-lagoon">
-                  <Edit2 className="w-4 h-4" />
-                </button>
+            <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
+              <button onClick={() => onEdit(site)} className="p-2 text-slate-300 hover:text-maldives-lagoon">
+                <Edit2 className="w-4 h-4" />
+              </button>
+              {isCustom && canDelete && (
                 <button onClick={() => onDelete(site.id)} className="p-2 text-slate-300 hover:text-red-500">
                   <Trash2 className="w-4 h-4" />
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 

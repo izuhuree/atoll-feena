@@ -17,15 +17,17 @@ export function buildSketchPrompt(site: DiveSite): string {
   const depthRange = site.depthMin !== undefined && site.depthMax !== undefined
     ? `${site.depthMin}-${site.depthMax} metres`
     : 'unknown depth range';
+  const diverInstructions = site.sketchInstructions?.trim() || site.description?.trim();
 
   return [
     `Top-down dive briefing sketch of "${site.name}" in the ${site.atoll} Atoll, Maldives.`,
     `Site type: ${site.type}. Depth range: ${depthRange}.`,
     `Typical current: ${site.current}. Notable features: ${notableFeatures || 'coral reef structure'}.`,
+    diverInstructions ? `Site-specific sketch instructions: ${diverInstructions}.` : '',
     `Style: clean watercolor + ink illustration on warm cream paper, soft turquoise and deep teal palette,`,
     `subtle bathymetric contour lines, a small compass rose in one corner, gentle drop-shadow.`,
     `Show the reef shape, channels, drop-offs and notable features as a stylised aerial diagram.`,
     `Do NOT include any text, labels, numbers, watermarks or human figures.`,
     `Square 1:1 composition, centered, minimal background.`,
-  ].join(' ');
+  ].filter(Boolean).join(' ');
 }

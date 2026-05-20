@@ -10,6 +10,9 @@ interface DiveSiteFormProps {
   onClose: () => void;
   onSave: () => void;
   editing: boolean;
+  canEditStructured: boolean;
+  canEditSketchInstructions: boolean;
+  submitLabel?: string;
 }
 
 /**
@@ -23,8 +26,27 @@ export function DiveSiteForm({
   onClose,
   onSave,
   editing,
+  canEditStructured,
+  canEditSketchInstructions,
+  submitLabel,
 }: DiveSiteFormProps) {
   const { atolls } = useAtolls();
+  const setDescription = (description: string) => {
+    const hasCustomSketchInstructions = !!newSite.sketchInstructions?.trim();
+    setNewSite({
+      ...newSite,
+      description,
+      sketchInstructions: hasCustomSketchInstructions ? newSite.sketchInstructions : description,
+    });
+  };
+
+  const setSketchInstructions = (sketchInstructions: string) => {
+    setNewSite({
+      ...newSite,
+      sketchInstructions,
+      sketchInstructionsUpdatedAt: new Date().toISOString(),
+    });
+  };
 
   return (
     <motion.div
@@ -47,7 +69,7 @@ export function DiveSiteForm({
         <div className="flex-1 overflow-y-auto no-scrollbar px-8 pb-10">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-display font-bold text-maldives-deep">
-              {editing ? 'Edit Dive Site' : 'Add New Dive Site'}
+              {editing ? (canEditStructured ? 'Edit Dive Site' : 'Suggest Site Edit') : 'Add New Dive Site'}
             </h2>
             <button
               onClick={onClose}
@@ -88,6 +110,7 @@ export function DiveSiteForm({
                   id="site-atoll"
                   className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-maldives-lagoon/20 font-semibold appearance-none min-h-[52px]"
                   value={newSite.atoll}
+                  disabled={!canEditStructured && editing}
                   onChange={(e) =>
                     setNewSite({ ...newSite, atoll: e.target.value as Atoll })
                   }
@@ -111,6 +134,7 @@ export function DiveSiteForm({
                   id="site-difficulty"
                   className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-maldives-lagoon/20 font-semibold appearance-none min-h-[52px]"
                   value={newSite.difficulty}
+                  disabled={!canEditStructured}
                   onChange={(e) =>
                     setNewSite({
                       ...newSite,
@@ -139,6 +163,7 @@ export function DiveSiteForm({
                   placeholder="Reef, Thila, Wreck..."
                   className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-maldives-lagoon/20 font-semibold min-h-[52px]"
                   value={newSite.type || ''}
+                  disabled={!canEditStructured}
                   onChange={(e) => setNewSite({ ...newSite, type: e.target.value })}
                 />
               </div>
@@ -155,6 +180,7 @@ export function DiveSiteForm({
                   inputMode="numeric"
                   className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-maldives-lagoon/20 font-semibold min-h-[52px]"
                   value={newSite.depthMax || ''}
+                  disabled={!canEditStructured}
                   onChange={(e) =>
                     setNewSite({ ...newSite, depthMax: parseInt(e.target.value) })
                   }
@@ -175,6 +201,7 @@ export function DiveSiteForm({
                 placeholder="e.g. Dec - May"
                 className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-maldives-lagoon/20 font-semibold min-h-[52px]"
                 value={newSite.bestSeason || ''}
+                disabled={!canEditStructured}
                 onChange={(e) =>
                   setNewSite({ ...newSite, bestSeason: e.target.value })
                 }
@@ -183,6 +210,7 @@ export function DiveSiteForm({
 
             <div className="flex gap-4">
               <button
+                disabled={!canEditStructured}
                 onClick={() =>
                   setNewSite({ ...newSite, isProtected: !newSite.isProtected })
                 }
@@ -198,6 +226,7 @@ export function DiveSiteForm({
                 Protected
               </button>
               <button
+                disabled={!canEditStructured}
                 onClick={() =>
                   setNewSite({
                     ...newSite,
@@ -229,11 +258,45 @@ export function DiveSiteForm({
                 placeholder="Mention currents, unique features..."
                 className="w-full p-5 bg-slate-50 border-none rounded-2xl min-h-[100px] focus:ring-2 focus:ring-maldives-lagoon/20 font-medium"
                 value={newSite.description || ''}
-                onChange={(e) =>
-                  setNewSite({ ...newSite, description: e.target.value })
-                }
+                onChange={(e) => setDescription(e.target.value)}
               />
             </div>
+
+            {canEditSketchInstructions && (
+            <div>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <label
+                  htmlFor="site-sketch-instructions"
+                  className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block"
+                >
+                  Sketch Instructions
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setSketchInstructions(newSite.description || '')}
+                  className="min-h-[32px] rounded-full bg-slate-100 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-500"
+                >
+                  Use Description
+                </button>
+              </div>
+              <textarea
+                id="site-sketch-instructions"
+                placeholder="Describe reef shape, swim-throughs, channels, sandy patches, drop-offs, cleaning stations..."
+                className="w-full p-5 bg-slate-50 border-none rounded-2xl min-h-[120px] focus:ring-2 focus:ring-maldives-lagoon/20 font-medium"
+                value={newSite.sketchInstructions || newSite.description || ''}
+                onChange={(e) => setSketchInstructions(e.target.value)}
+              />
+              <p className="mt-2 text-xs font-medium leading-relaxed text-slate-500">
+                Used only for AI sketch generation. Keep the public description simple for divers.
+              </p>
+            </div>
+            )}
+
+            {!canEditStructured && (
+              <p className="rounded-2xl bg-cyan-50 p-4 text-xs font-semibold leading-relaxed text-cyan-800">
+                Your contribution will go to the review queue. Trusted reviewers can approve description updates and maintain sketch instructions.
+              </p>
+            )}
           </div>
         </div>
 
@@ -243,7 +306,7 @@ export function DiveSiteForm({
             disabled={!newSite.name}
             className="w-full min-h-[56px] py-4 bg-maldives-deep text-white rounded-[24px] font-bold shadow-xl shadow-maldives-shallow/50 active:scale-[0.98] transition-transform text-sm uppercase tracking-widest disabled:opacity-50"
           >
-            {editing ? 'Update Dive Site' : 'Save Dive Site'}
+            {submitLabel || (editing ? 'Update Dive Site' : 'Save Dive Site')}
           </button>
         </div>
       </motion.div>
