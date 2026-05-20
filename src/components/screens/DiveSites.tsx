@@ -20,6 +20,7 @@ import { ATOLLS } from '../../constants';
 import { motion, AnimatePresence } from 'motion/react';
 import { DiveSiteMap } from '../dive-sites/DiveSiteMap';
 import { DiveSiteForm } from '../dive-sites/DiveSiteForm';
+import { DiveSiteMappingSection } from '../dive-sites/DiveSiteMappingSection';
 
 interface DiveSitesProps {
   onLogAtSite: (siteId: string) => void;
@@ -357,6 +358,8 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
           />
         )}
       </AnimatePresence>
+
+      <DiveSiteMappingSection />
     </div>
   );
 }
