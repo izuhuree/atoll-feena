@@ -44,9 +44,9 @@ export interface DiveSite {
   islandBase: string;
   region?: 'north' | 'central' | 'south';
   type: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  depthMin: number;
-  depthMax: number;
+  difficulty: 'beginner' | 'intermediate' | 'advanced' | 'unknown';
+  depthMin?: number;
+  depthMax?: number;
   current: CurrentStrength;
   visibility?: string;
   coordinates?: {
@@ -61,6 +61,11 @@ export interface DiveSite {
   protectedStatus?: string;
   localName?: string;
   notes?: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  sourceAtoll?: string;
+  dataQuality?: 'name-atoll-only' | 'feature-tagged' | 'detailed';
+  importedAt?: string;
   /** Cached AI-generated top-down sketch URL (Firebase Storage). */
   aiSketchUrl?: string;
 }

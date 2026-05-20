@@ -1,9 +1,8 @@
-import { useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import { DiveSite } from '../../types';
-import { useDiveSites } from '../../hooks/useDiveSites';
 import { DiveSiteKind, getDiveSiteKind, KIND_META } from '../../lib/siteKindMeta';
 
 /**
@@ -37,18 +36,15 @@ const getIcon = (kind: DiveSiteKind): L.DivIcon => {
 };
 
 /**
- * Interactive Maldives dive-site map. Uses Leaflet via react-leaflet so that
- * lifecycle, cleanup and HMR are handled by React; clustering is delegated
- * to leaflet.markercluster (industry-standard plugin) through
- * react-leaflet-cluster.
+ * Interactive Maldives dive-site map. Parent screens pass in the already
+ * filtered site list, so the map and directory always describe the same set.
  */
-export function DiveSiteClusterMap() {
-  const { allSites } = useDiveSites();
-  const sites = useMemo(
-    () => allSites.filter((site): site is DiveSite & { coordinates: { lat: number; lng: number } } =>
+export function DiveSiteClusterMap({ sites: visibleSites }: { sites: DiveSite[] }) {
+  const sitesWithCoordinates = useMemo(
+    () => visibleSites.filter((site): site is DiveSite & { coordinates: { lat: number; lng: number } } =>
       typeof site.coordinates?.lat === 'number' && typeof site.coordinates?.lng === 'number'
     ),
-    [allSites]
+    [visibleSites]
   );
 
   return (
@@ -62,6 +58,7 @@ export function DiveSiteClusterMap() {
       // Worldwide tile copies look weird around the Maldives; keep things tidy.
       worldCopyJump={false}
     >
+      <FitToSites sites={sitesWithCoordinates} />
       <TileLayer
         attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -73,7 +70,7 @@ export function DiveSiteClusterMap() {
         spiderfyOnMaxZoom
         maxClusterRadius={50}
       >
-        {sites.map((site) => (
+        {sitesWithCoordinates.map((site) => (
           <Marker
             key={site.id}
             position={[site.coordinates.lat, site.coordinates.lng]}
@@ -87,10 +84,12 @@ export function DiveSiteClusterMap() {
                 <p className="text-[11px] uppercase tracking-widest text-slate-500">
                   {site.atoll} Atoll · {KIND_META[getDiveSiteKind(site.type)].label}
                 </p>
-                <p className="text-[11px] text-slate-600">
-                  <span className="font-semibold">Depth:</span> {site.depthMin}–
-                  {site.depthMax} m
-                </p>
+                {site.depthMin !== undefined && site.depthMax !== undefined && (
+                  <p className="text-[11px] text-slate-600">
+                    <span className="font-semibold">Depth:</span> {site.depthMin}-
+                    {site.depthMax} m
+                  </p>
+                )}
                 <p className="text-[11px] text-slate-600">
                   <span className="font-semibold">Look for:</span>{' '}
                   {site.marineLifeHighlights.slice(0, 3).join(', ') || 'Site conditions'}
@@ -105,4 +104,29 @@ export function DiveSiteClusterMap() {
       </MarkerClusterGroup>
     </MapContainer>
   );
+}
+
+function FitToSites({
+  sites,
+}: {
+  sites: Array<DiveSite & { coordinates: { lat: number; lng: number } }>;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (sites.length === 0) {
+      map.setView([3.2, 73.2], 6);
+      return;
+    }
+
+    const bounds = L.latLngBounds(sites.map((site) => [site.coordinates.lat, site.coordinates.lng]));
+    if (sites.length === 1) {
+      map.setView(bounds.getCenter(), 10);
+      return;
+    }
+
+    map.fitBounds(bounds, { padding: [28, 28], maxZoom: 10 });
+  }, [map, sites]);
+
+  return null;
 }

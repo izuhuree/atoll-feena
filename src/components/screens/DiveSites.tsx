@@ -1,26 +1,19 @@
-import { useState } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import {
   Search,
   Filter,
-  MapPin,
-  Compass,
-  Thermometer,
   CircleDot,
-  Eye,
   Plus,
-  Trash2,
-  AlertCircle,
-  Edit2,
-  ShieldCheck,
+  MapPin,
+  RotateCcw,
 } from 'lucide-react';
-import { cn } from '../../lib/utils';
 import { Atoll, DiveSite } from '../../types';
 import { useDiveSites } from '../../hooks/useDiveSites';
 import { useAtolls } from '../../hooks/useAtolls';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import { DiveSiteForm } from '../dive-sites/DiveSiteForm';
 import { DiveSiteMappingSection } from '../dive-sites/DiveSiteMappingSection';
-import { SiteVisualsPanel } from '../dive-sites/SiteVisualsPanel';
+import { DiveSiteCard } from '../dive-sites/DiveSiteCard';
 
 interface DiveSitesProps {
   onLogAtSite: (siteId: string) => void;
@@ -31,7 +24,8 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
   const { atolls } = useAtolls();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAtoll, setSelectedAtoll] = useState<Atoll | 'All'>('All');
-  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  const [selectedIsland, setSelectedIsland] = useState('All');
+  const [selectedType, setSelectedType] = useState('All');
   const [isAddingSite, setIsAddingSite] = useState(false);
   const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
   const [newSite, setNewSite] = useState<Partial<DiveSite>>({
@@ -46,17 +40,54 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
     regulatedAccess: false
   });
 
-  const filteredSites = allSites.filter(site => {
-    const query = searchTerm.toLowerCase();
-    const matchesSearch = site.name.toLowerCase().includes(query) || 
-                         site.atoll.toLowerCase().includes(query) ||
-                         site.type.toLowerCase().includes(query) ||
-                         site.marineLifeHighlights.some(life => life.toLowerCase().includes(query));
-    const matchesAtoll = selectedAtoll === 'All' || site.atoll === selectedAtoll;
-    return matchesSearch && matchesAtoll;
-  });
-
   const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
+
+  const islandOptions = useMemo(() => {
+    return [...new Set(
+      allSites
+        .filter((site) => selectedAtoll === 'All' || site.atoll === selectedAtoll)
+        .map((site) => site.islandBase)
+        .filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b));
+  }, [allSites, selectedAtoll]);
+
+  const typeOptions = useMemo(() => {
+    return [...new Set(allSites.map((site) => site.type).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b));
+  }, [allSites]);
+
+  const filteredSites = useMemo(() => {
+    return allSites
+      .filter((site) => {
+        const query = searchTerm.trim().toLowerCase();
+        const matchesSearch = !query ||
+          site.name.toLowerCase().includes(query) ||
+          site.atoll.toLowerCase().includes(query) ||
+          site.islandBase?.toLowerCase().includes(query) ||
+          site.type.toLowerCase().includes(query) ||
+          site.marineLifeHighlights.some((life) => life.toLowerCase().includes(query));
+        const matchesAtoll = selectedAtoll === 'All' || site.atoll === selectedAtoll;
+        const matchesIsland = selectedIsland === 'All' || site.islandBase === selectedIsland;
+        const matchesType = selectedType === 'All' || site.type === selectedType;
+        return matchesSearch && matchesAtoll && matchesIsland && matchesType;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allSites, searchTerm, selectedAtoll, selectedIsland, selectedType]);
+
+  const groupedSites = useMemo(() => {
+    return filteredSites.reduce<Record<string, DiveSite[]>>((groups, site) => {
+      const letter = site.name[0]?.toUpperCase().match(/[A-Z]/) ? site.name[0].toUpperCase() : '#';
+      groups[letter] = [...(groups[letter] || []), site];
+      return groups;
+    }, {});
+  }, [filteredSites]);
+
+  const activeFilterCount = [
+    searchTerm.trim(),
+    selectedAtoll !== 'All',
+    selectedIsland !== 'All',
+    selectedType !== 'All',
+  ].filter(Boolean).length;
 
   if (loading) {
     return (
@@ -110,12 +141,22 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
     setExpandedSiteId(expandedSiteId === id ? null : id);
   };
 
+  const resetFilters = () => {
+    setSearchTerm('');
+    setSelectedAtoll('All');
+    setSelectedIsland('All');
+    setSelectedType('All');
+    setExpandedSiteId(null);
+  };
+
   return (
-    <div className="px-6 pt-12 pb-32">
-      <header className="mb-8 flex justify-between items-start">
+    <div className="px-4 pt-10 pb-32 sm:px-6 lg:px-8">
+      <header className="mx-auto mb-6 flex max-w-7xl justify-between gap-4">
         <div>
           <h1 className="text-3xl font-display font-bold mb-2 text-maldives-deep">Dive Sites</h1>
-          <p className="text-slate-500 text-sm">{allSites.length} curated Maldives dive sites with depth, season and GPS detail</p>
+          <p className="text-slate-500 text-sm">
+            {filteredSites.length} of {allSites.length} Maldives sites, sorted A-Z
+          </p>
         </div>
         <button 
           onClick={() => setIsAddingSite(true)}
@@ -125,223 +166,108 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
         </button>
       </header>
 
-      <div className="relative mb-6">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-        <input 
-          type="text"
-          placeholder="Search sites, atolls..."
-          className="w-full pl-12 pr-4 py-4 bg-white border border-slate-100 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-maldives-lagoon/20"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
+      <div className="mx-auto max-w-7xl">
+        <section className="mb-4 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
+          <div className="relative mb-4">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search site, island, atoll or marine life"
+              className="w-full min-h-[52px] pl-12 pr-4 bg-slate-50 border border-transparent rounded-2xl focus:outline-none focus:ring-2 focus:ring-maldives-lagoon/20"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
 
-      <div className="space-y-4 mb-8">
-        <div className="relative">
-          <select 
-            className="w-full pl-4 pr-10 py-4 bg-white border border-slate-100 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-maldives-lagoon/20 appearance-none font-bold text-maldives-deep"
-            value={selectedAtoll}
-            onChange={(e) => {
-              setSelectedAtoll(e.target.value as Atoll | 'All');
-              setSelectedSiteId(null);
-            }}
-          >
-            <option value="All">All Atolls</option>
-            {atolls.map(atoll => (
-              <option key={atoll.id} value={atoll.name}>{atoll.name}</option>
-            ))}
-          </select>
-          <Filter className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
-        </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <SelectField
+              id="atoll-filter"
+              label="Atoll"
+              icon={<Filter className="w-4 h-4" />}
+              value={selectedAtoll}
+              onChange={(value) => {
+                setSelectedAtoll(value as Atoll | 'All');
+                setSelectedIsland('All');
+                setExpandedSiteId(null);
+              }}
+              options={['All', ...atolls.map((atoll) => atoll.name)]}
+              allLabel="All Atolls"
+            />
+            <SelectField
+              id="island-filter"
+              label="Island"
+              icon={<MapPin className="w-4 h-4 text-maldives-lagoon" />}
+              value={selectedIsland}
+              onChange={setSelectedIsland}
+              options={['All', ...islandOptions]}
+              allLabel="All Islands"
+            />
+            <SelectField
+              id="type-filter"
+              label="Site Type"
+              icon={<CircleDot className="w-4 h-4" />}
+              value={selectedType}
+              onChange={setSelectedType}
+              options={['All', ...typeOptions]}
+              allLabel="All Site Types"
+            />
+          </div>
 
-        <div className="relative">
-          <select 
-            className="w-full pl-4 pr-10 py-4 bg-white border border-slate-100 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-maldives-lagoon/20 appearance-none font-bold text-maldives-deep"
-            value={selectedSiteId || ''}
-            onChange={(e) => {
-              const val = e.target.value || null;
-              setSelectedSiteId(val);
-              if (val) setExpandedSiteId(val);
-            }}
-          >
-            <option value="">Quick Select Dive Site...</option>
-            {allSites.filter(s => selectedAtoll === 'All' || s.atoll === selectedAtoll).map(site => (
-              <option key={site.id} value={site.id}>{site.name}</option>
-            ))}
-          </select>
-          <MapPin className="absolute right-4 top-1/2 -translate-y-1/2 text-maldives-lagoon w-4 h-4 pointer-events-none" />
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        {filteredSites.filter(s => !selectedSiteId || s.id === selectedSiteId).map(site => {
-          const isCustom = site.id.startsWith('custom-');
-          const isExpanded = expandedSiteId === site.id;
-
-          return (
-            <motion.div 
-              layout
-              key={site.id} 
-              className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col transition-all duration-300"
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold text-slate-500">
+              {activeFilterCount > 0
+                ? `${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'} applied.`
+                : 'Choose an atoll, then an island, to narrow local dive options.'}
+            </p>
+            <button
+              onClick={resetFilters}
+              className="min-h-[44px] shrink-0 rounded-2xl bg-slate-100 px-4 text-xs font-bold text-slate-600 flex items-center gap-2"
             >
-              <div 
-                className="p-6 cursor-pointer"
-                onClick={() => toggleExpand(site.id)}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="text-xl font-display font-bold text-maldives-deep">{site.name}</h3>
-                    <p className="text-slate-500 text-sm flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-maldives-lagoon" /> {site.atoll}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest",
-                      site.difficulty === 'beginner' ? "bg-green-100 text-green-700" :
-                      site.difficulty === 'intermediate' ? "bg-blue-100 text-blue-700" :
-                      "bg-purple-100 text-purple-700"
-                    )}>
-                      {site.difficulty}
-                    </span>
-                    {isCustom && (
-                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                        <button 
-                          onClick={() => startEditing(site)}
-                          className="p-2 text-slate-300 hover:text-maldives-lagoon transition-colors"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => deleteSite(site.id)}
-                          className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <p className={cn(
-                  "text-slate-600 text-sm leading-relaxed mb-4",
-                  !isExpanded && "line-clamp-2"
-                )}>
-                  {site.description}
-                </p>
+              <RotateCcw className="w-4 h-4" />
+              Reset
+            </button>
+          </div>
+        </section>
 
-                <div className="flex flex-wrap gap-3 mb-6">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                    <Compass className="w-4 h-4" /> {site.current}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                    <Thermometer className="w-4 h-4" /> {site.depthMin}-{site.depthMax}m
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                    <CircleDot className="w-4 h-4" /> {site.type}
-                  </div>
-                  {site.visibility && (
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                      <Eye className="w-4 h-4" /> {site.visibility}m vis.
-                    </div>
-                  )}
-                </div>
+        <DiveSiteMappingSection sites={filteredSites} totalSites={allSites.length} />
 
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="grid grid-cols-2 gap-4 mb-6 pt-2 border-t border-slate-50">
-                        <div>
-                          <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Best Season</label>
-                          <p className="text-sm font-semibold text-maldives-deep">{site.bestSeason || 'Year-round'}</p>
-                        </div>
-                        <div>
-                          <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Island Base</label>
-                          <p className="text-sm font-semibold text-maldives-deep">{site.islandBase}</p>
-                        </div>
-                        {site.coordinates && (
-                          <div>
-                            <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Coordinates</label>
-                            <p className="text-sm font-semibold text-maldives-deep">
-                              {site.coordinates.lat.toFixed(3)}, {site.coordinates.lng.toFixed(3)}
-                            </p>
-                          </div>
-                        )}
-                        {site.protectedStatus && site.protectedStatus !== 'none' && (
-                          <div>
-                            <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Status</label>
-                            <p className="text-sm font-semibold text-maldives-deep">{site.protectedStatus}</p>
-                          </div>
-                        )}
-                      </div>
+        <div className="mb-4 flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon">Directory</p>
+            <h2 className="text-xl font-display font-bold text-maldives-deep">Alphabetical results</h2>
+          </div>
+          <p className="text-xs font-bold text-slate-400">{filteredSites.length}/{allSites.length} sites</p>
+        </div>
 
-                      {/* Locator map + AI / procedural site sketch */}
-                      <SiteVisualsPanel site={site} />
+        <div className="space-y-6">
+        {Object.entries(groupedSites).map(([letter, sites]) => (
+          <section key={letter} aria-labelledby={`sites-${letter}`}>
+            <h2 id={`sites-${letter}`} className="sticky top-0 z-10 -mx-4 mb-3 bg-slate-50/95 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+              {letter}
+            </h2>
+            <div className="space-y-4">
+              {sites.map((site) => (
+                <DiveSiteCard
+                  key={site.id}
+                  site={site}
+                  isExpanded={expandedSiteId === site.id}
+                  onToggle={toggleExpand}
+                  onEdit={startEditing}
+                  onDelete={deleteSite}
+                  onLogAtSite={onLogAtSite}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
 
-                      <div className="flex flex-wrap gap-1.5 mb-6">
-                        {site.marineLifeHighlights.map(life => (
-                          <span key={life} className="bg-maldives-lagoon/5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase text-maldives-lagoon">
-                            {life}
-                          </span>
-                        ))}
-                      </div>
-
-                      {site.notes && (
-                        <p className="mb-6 rounded-2xl bg-slate-50 p-4 text-xs font-medium leading-relaxed text-slate-500">
-                          {site.notes}
-                        </p>
-                      )}
-
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onLogAtSite(site.id);
-                        }}
-                        className="w-full py-4 bg-maldives-lagoon text-white rounded-2xl font-bold active:scale-[0.98] transition-transform shadow-lg shadow-maldives-shallow/50 mb-2"
-                      >
-                        Log Dive Here
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {!isExpanded && (
-                  <div className="flex justify-center pt-2">
-                    <div className="w-8 h-1 bg-slate-100 rounded-full" />
-                  </div>
-                )}
-              </div>
-              
-              {(site.isProtected || isExpanded) && (
-                <div className={cn(
-                  "px-6 py-3 flex items-center justify-between transition-colors",
-                  site.isProtected ? "bg-orange-50" : "bg-slate-50"
-                )}>
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className={cn("w-4 h-4", site.isProtected ? "text-orange-600" : "text-slate-400")} />
-                    <span className={cn(
-                      "text-[10px] font-bold uppercase tracking-wider",
-                      site.isProtected ? "text-orange-700" : "text-slate-500"
-                    )}>
-                      {site.isProtected ? "Protected Marine Area" : "Non-Protected Site"}
-                    </span>
-                  </div>
-                  {site.regulatedAccess && (
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-3 h-3 text-red-600" />
-                      <span className="text-[9px] font-bold uppercase text-red-700 tracking-wider">Permit Req.</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </motion.div>
-          );
-        })}
+        {filteredSites.length === 0 && (
+          <div className="rounded-3xl border border-slate-100 bg-white p-8 text-center">
+            <p className="font-bold text-maldives-deep">No dive sites match these filters.</p>
+            <p className="mt-2 text-sm text-slate-500">Try another atoll, island, type or search term.</p>
+          </div>
+        )}
+      </div>
       </div>
 
       <AnimatePresence>
@@ -355,8 +281,49 @@ export function DiveSites({ onLogAtSite }: DiveSitesProps) {
           />
         )}
       </AnimatePresence>
+    </div>
+  );
+}
 
-      <DiveSiteMappingSection />
+function SelectField({
+  id,
+  label,
+  icon,
+  value,
+  onChange,
+  options,
+  allLabel,
+}: {
+  id: string;
+  label: string;
+  icon: ReactNode;
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  allLabel: string;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+        {label}
+      </label>
+      <div className="relative">
+        <select
+          id={id}
+          className="w-full min-h-[52px] pl-4 pr-10 bg-slate-50 border border-transparent rounded-2xl focus:outline-none focus:ring-2 focus:ring-maldives-lagoon/20 appearance-none font-bold text-maldives-deep"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        >
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option === 'All' ? allLabel : option}
+            </option>
+          ))}
+        </select>
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+          {icon}
+        </span>
+      </div>
     </div>
   );
 }

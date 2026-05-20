@@ -155,13 +155,14 @@ export function SiteSketchSvg({ site }: SiteSketchSvgProps) {
         <text y="-22" fontSize="9" textAnchor="middle" fill="#075985" fontWeight="700">N</text>
       </g>
 
-      {/* Depth label */}
-      <g transform="translate(20, 380)">
-        <rect width="120" height="22" rx="11" fill="#fff" opacity="0.9" />
-        <text x="60" y="15" fontSize="10" textAnchor="middle" fill="#075985" fontWeight="700">
-          {site.depthMin}–{site.depthMax} m · {site.current}
-        </text>
-      </g>
+      {site.depthMin !== undefined && site.depthMax !== undefined && (
+        <g transform="translate(20, 380)">
+          <rect width="120" height="22" rx="11" fill="#fff" opacity="0.9" />
+          <text x="60" y="15" fontSize="10" textAnchor="middle" fill="#075985" fontWeight="700">
+            {site.depthMin}-{site.depthMax} m · {site.current}
+          </text>
+        </g>
+      )}
     </svg>
   );
 }

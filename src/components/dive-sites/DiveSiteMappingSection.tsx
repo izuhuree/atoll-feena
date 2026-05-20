@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { KIND_META } from '../../lib/siteKindMeta';
 import { BathymetryExplainer } from './BathymetryExplainer';
+import { DiveSite } from '../../types';
 
 /**
  * Lazy-load the Leaflet map so the ~110 KB leaflet + markercluster bundle
@@ -12,36 +13,41 @@ const DiveSiteClusterMap = lazy(() =>
   import('./DiveSiteClusterMap').then((m) => ({ default: m.DiveSiteClusterMap }))
 );
 
-export function DiveSiteMappingSection() {
+interface DiveSiteMappingSectionProps {
+  sites: DiveSite[];
+  totalSites: number;
+}
+
+export function DiveSiteMappingSection({ sites, totalSites }: DiveSiteMappingSectionProps) {
+  const mappedCount = sites.filter((site) => site.coordinates).length;
+
   return (
     <section
       aria-labelledby="dive-site-mapping-heading"
-      className="mt-12 pt-2"
+      className="mb-8"
     >
-      <header className="mb-6 px-1">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon mb-1">
-          Explore
-        </p>
-        <h2
-          id="dive-site-mapping-heading"
-          className="text-2xl font-display font-bold text-maldives-deep"
-        >
-          Dive Site Mapping
-        </h2>
-        <p className="text-sm text-slate-500 mt-1 max-w-xl leading-relaxed">
-          A live clustered map of curated Maldives sites, paired with an
-          open-data workflow for building your own bathymetric overlays in QGIS.
-        </p>
+      <header className="mb-4 flex flex-col gap-3 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon mb-1">
+            Filtered Map
+          </p>
+          <h2 id="dive-site-mapping-heading" className="text-xl font-display font-bold text-maldives-deep">
+            Sites matching your filters
+          </h2>
+          <p className="text-sm text-slate-500 mt-1 max-w-xl leading-relaxed">
+            The map and directory use the same filtered database records.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <Stat label="shown" value={sites.length} />
+          <Stat label="mapped" value={mappedCount} />
+          <Stat label="total" value={totalSites} />
+        </div>
       </header>
 
-      {/* Mobile-first: stack on < md, side-by-side on lg+ */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* MAP CARD */}
         <div className="lg:col-span-3 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-          <div
-            className="relative w-full"
-            style={{ height: 480 }}
-          >
+          <div className="relative h-[360px] w-full sm:h-[440px] lg:h-[520px]">
             <Suspense
               fallback={
                 <div className="absolute inset-0 flex items-center justify-center bg-slate-50">
@@ -49,11 +55,15 @@ export function DiveSiteMappingSection() {
                 </div>
               }
             >
-              <DiveSiteClusterMap />
+              <DiveSiteClusterMap sites={sites} />
             </Suspense>
+            {mappedCount === 0 && (
+              <div className="absolute inset-x-4 bottom-4 rounded-2xl bg-white/95 p-4 text-sm font-semibold text-slate-600 shadow-lg">
+                No matching sites have coordinates yet. The directory below still shows database records for these filters.
+              </div>
+            )}
           </div>
 
-          {/* Legend — separate from the map so it never blocks markers */}
           <div className="p-4 border-t border-slate-50 flex flex-wrap items-center justify-between gap-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
               Legend
@@ -81,11 +91,19 @@ export function DiveSiteMappingSection() {
           </div>
         </div>
 
-        {/* QGIS / BATHYMETRY EXPLAINER */}
         <div className="lg:col-span-2">
           <BathymetryExplainer />
         </div>
       </div>
     </section>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="min-w-20 rounded-2xl bg-slate-50 px-4 py-3">
+      <p className="text-lg font-display font-bold text-maldives-deep">{value}</p>
+      <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+    </div>
   );
 }
