@@ -45,6 +45,8 @@ export type UserRole =
   | 'marine-science-reviewer'
   | 'platform-admin';
 
+export type UserAccessStatus = 'active' | 'pending' | 'disabled' | 'invited';
+
 export type DiveSiteSuggestionStatus = 'pending' | 'approved' | 'rejected';
 
 export interface DiveSite {
@@ -99,10 +101,25 @@ export interface UserProfile {
   email: string;
   photoURL?: string;
   role?: UserRole;
+  accessStatus?: UserAccessStatus;
   homeCountry?: string;
   certificationProfile?: CertificationProfile;
   emergencyContact?: string;
   units: 'metric' | 'imperial';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AppSettings {
+  appName?: string;
+  contributionReviewRequired?: boolean;
+  sketchGenerationEnabled?: boolean;
+  defaultSketchInstructionsFromDescription?: boolean;
+  speciesObservationReviewRequired?: boolean;
+  publicDiveDataDefault?: 'private' | 'public aggregate';
+  dataExportEnabled?: boolean;
+  updatedAt?: string;
+  updatedBy?: string;
 }
 
 export interface DiveSiteConditionReport {

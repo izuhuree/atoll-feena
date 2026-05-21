@@ -35,9 +35,13 @@ export function useUserProfile(user: User | null) {
           name: raw.name || user.displayName || 'Diver',
           email: raw.email || user.email || '',
           photoURL: raw.photoURL || user.photoURL || undefined,
+          role: raw.role,
+          accessStatus: raw.accessStatus || 'active',
           homeCountry: raw.homeCountry || '',
           certificationProfile: raw.certificationProfile,
           units: raw.units || 'metric',
+          createdAt: raw.createdAt,
+          updatedAt: raw.updatedAt,
         });
         setIsLoading(false);
       },

@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { User, signOut } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import {
@@ -14,10 +14,15 @@ import {
   Save,
   PencilLine,
   AlertCircle,
+  UsersRound,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { CertificationProfile } from '../../types';
 import { useUserProfile } from '../../hooks/useUserProfile';
+import { useUserRole } from '../../hooks/useUserRole';
 import { AiSettingsSection } from '../profile/AiSettingsSection';
+import { UserManagementSection } from '../settings/UserManagementSection';
+import { AppSettingsSection } from '../settings/AppSettingsSection';
 
 interface ProfileProps {
   user: User | null;
@@ -35,9 +40,12 @@ const emptyCertification: CertificationProfile = {
 export function Profile({ user, onOpenWatch }: ProfileProps) {
   const [isEditingCert, setIsEditingCert] = useState(false);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'profile' | 'users' | 'app'>('profile');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { profile, isLoading, isSaving, error, saveProfile, saveCertificationProfile, uploadProfilePhoto } = useUserProfile(user);
+  const { canManageUsers, canManageAppSettings } = useUserRole(user);
+  const isAdminSettings = canManageUsers || canManageAppSettings;
 
   const [profileForm, setProfileForm] = useState({
     name: '',
@@ -63,6 +71,12 @@ export function Profile({ user, onOpenWatch }: ProfileProps) {
       instructorName: profile.certificationProfile?.instructorName || '',
     });
   }, [profile]);
+
+  useEffect(() => {
+    if (!isAdminSettings && activeSettingsTab !== 'profile') {
+      setActiveSettingsTab('profile');
+    }
+  }, [activeSettingsTab, isAdminSettings]);
 
   const avatarUrl = useMemo(() => {
     if (profilePhotoPreview) return profilePhotoPreview;
@@ -153,6 +167,9 @@ export function Profile({ user, onOpenWatch }: ProfileProps) {
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
           </div>
           <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              {isAdminSettings ? 'Settings' : 'Profile'}
+            </p>
             <h2 className="text-2xl font-display font-bold tracking-tight text-maldives-deep">{profile?.name || user.displayName || 'Diver'}</h2>
             <p className="text-slate-500 text-sm">{profile?.email || user.email}</p>
           </div>
@@ -165,9 +182,34 @@ export function Profile({ user, onOpenWatch }: ProfileProps) {
             <span>{error || statusMessage}</span>
           </div>
         )}
+
+        {isAdminSettings && (
+          <div className="mt-5 grid grid-cols-3 gap-2 rounded-2xl bg-slate-100 p-1">
+            <SettingsTabButton
+              label="My Profile"
+              active={activeSettingsTab === 'profile'}
+              onClick={() => setActiveSettingsTab('profile')}
+              icon={<UserIcon className="w-4 h-4" />}
+            />
+            <SettingsTabButton
+              label="Users"
+              active={activeSettingsTab === 'users'}
+              onClick={() => setActiveSettingsTab('users')}
+              icon={<UsersRound className="w-4 h-4" />}
+            />
+            <SettingsTabButton
+              label="App"
+              active={activeSettingsTab === 'app'}
+              onClick={() => setActiveSettingsTab('app')}
+              icon={<SlidersHorizontal className="w-4 h-4" />}
+            />
+          </div>
+        )}
       </div>
 
       <div className="px-6 space-y-6">
+        {activeSettingsTab === 'profile' && (
+          <>
         <section>
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-2">Profile Details</h3>
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 space-y-4">
@@ -382,6 +424,16 @@ export function Profile({ user, onOpenWatch }: ProfileProps) {
             </button>
           </div>
         </section>
+          </>
+        )}
+
+        {isAdminSettings && activeSettingsTab === 'users' && (
+          <UserManagementSection enabled={canManageUsers} currentUserId={user.uid} />
+        )}
+
+        {isAdminSettings && activeSettingsTab === 'app' && (
+          <AppSettingsSection enabled={canManageAppSettings} user={user} />
+        )}
       </div>
 
       <div className="flex items-center justify-center gap-2 mt-10">
@@ -389,5 +441,30 @@ export function Profile({ user, onOpenWatch }: ProfileProps) {
         <p className="text-center text-[10px] text-slate-300 font-medium">AtollFeeNa v1.0.0 — Maldivian Blue</p>
       </div>
     </div>
+  );
+}
+
+function SettingsTabButton({
+  label,
+  active,
+  onClick,
+  icon,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  icon: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`min-h-[44px] rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors ${
+        active ? 'bg-white text-maldives-deep shadow-sm' : 'text-slate-500'
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }

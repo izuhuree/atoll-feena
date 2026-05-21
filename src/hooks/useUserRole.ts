@@ -3,6 +3,7 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { auth, db } from '../lib/firebase';
 import { UserRole } from '../types';
+import { isPlatformAdminRole } from '../lib/roles';
 
 const trustedRoles: UserRole[] = [
   'dive-professional',
@@ -18,6 +19,8 @@ export function isTrustedSiteRole(role: UserRole, admin: boolean) {
 export function useUserRole(user: User | null) {
   const [role, setRole] = useState<UserRole>('recreational-diver');
   const [isAdmin, setIsAdmin] = useState(false);
+  const hasAdminIdentity = user?.email === 'hunaruhub@gmail.com';
+  const effectiveAdmin = isAdmin || hasAdminIdentity || isPlatformAdminRole(role);
 
   useEffect(() => {
     if (!user || !db) {
@@ -58,8 +61,10 @@ export function useUserRole(user: User | null) {
 
   return {
     role,
-    isAdmin,
-    canPublishDiveSiteInfo: isTrustedSiteRole(role, isAdmin),
-    canEditSketchInstructions: isTrustedSiteRole(role, isAdmin),
+    isAdmin: effectiveAdmin,
+    canManageUsers: effectiveAdmin,
+    canManageAppSettings: effectiveAdmin,
+    canPublishDiveSiteInfo: isTrustedSiteRole(role, effectiveAdmin),
+    canEditSketchInstructions: isTrustedSiteRole(role, effectiveAdmin),
   };
 }

@@ -47,7 +47,13 @@ function extractGroundingSources(response: unknown): SourceReference[] {
 }
 
 function parseDraft(text: string): DescriptionDraft {
-  const cleaned = text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
+  const trimmed = text.trim();
+  const fenced = trimmed.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
+  const objectStart = fenced.indexOf('{');
+  const objectEnd = fenced.lastIndexOf('}');
+  const cleaned = objectStart >= 0 && objectEnd > objectStart
+    ? fenced.slice(objectStart, objectEnd + 1)
+    : fenced;
   const parsed = JSON.parse(cleaned) as DescriptionDraft;
   return {
     description: parsed.description?.trim() || '',
@@ -83,7 +89,6 @@ export function useDiveSiteDescriptionAI() {
         contents: buildDiveSiteDescriptionPrompt(site),
         config: {
           temperature: 0.2,
-          responseMimeType: 'application/json',
           tools: [{ googleSearch: {} }],
         },
       });
