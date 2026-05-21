@@ -25,8 +25,14 @@ service cloud.firestore {
       return resource.data;
     }
 
+    function hasAdminIdentity() {
+      return request.auth.token.admin == true ||
+             request.auth.token.email == 'hunaruhub@gmail.com';
+    }
+
     function isAdmin() {
       return isSignedIn() && (
+        hasAdminIdentity() ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
         userRole() == 'platform-admin'
       );

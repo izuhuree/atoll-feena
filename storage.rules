@@ -6,8 +6,14 @@ service firebase.storage {
       return request.auth != null && request.auth.token.email_verified == true;
     }
 
+    function hasAdminIdentity() {
+      return request.auth.token.admin == true ||
+             request.auth.token.email == 'hunaruhub@gmail.com';
+    }
+
     function isAdmin() {
       return isSignedIn() && (
+        hasAdminIdentity() ||
         firestore.exists(/databases/atollfeena/documents/admins/$(request.auth.uid)) ||
         userRole() == 'platform-admin'
       );
@@ -44,8 +50,7 @@ service firebase.storage {
       allow read: if true;
       allow write: if isAdmin() || (
         canGenerateDiveSiteSketches() &&
-        request.resource.size < 10 * 1024 * 1024 &&
-        request.resource.contentType.matches('image/.*')
+        request.resource.size < 10 * 1024 * 1024
       );
     }
 
