@@ -1,105 +1,194 @@
-import { ChevronLeft, Info, Search, BookOpen, Map, Settings } from 'lucide-react';
+import {
+  BookOpen,
+  ChevronLeft,
+  Database,
+  KeyRound,
+  Layers3,
+  Map,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react';
+import { ReactNode } from 'react';
 
 interface UserGuideProps {
   onBack: () => void;
 }
 
+const userSteps = [
+  {
+    title: 'Log Dives',
+    text: 'Record site, depth, time, visibility, current, temperature, hazards, species, reef health, debris, and notes.',
+  },
+  {
+    title: 'Explore Sites',
+    text: 'Filter by atoll or dive-site name. AtollFeeNa loads matching database records progressively instead of loading every site.',
+  },
+  {
+    title: 'Contribute Observations',
+    text: 'Each log can strengthen recent safety conditions, reef records, conservation signals, and future dive-site intelligence.',
+  },
+  {
+    title: 'Use Pro Planning',
+    text: 'Active Pro users can create dive plans, safety checklists, equipment checks, group plans, and briefing notes.',
+  },
+];
+
+const architecture = [
+  'React 19 + TypeScript single-page app built with Vite.',
+  'Firebase Auth handles Google sign-in and profile sync.',
+  'Firestore stores users, roles, dive sites, logs, observations, Pro access, app settings, and review queues.',
+  'Firebase Storage stores uploaded media and generated dive-site sketches.',
+  'Tailwind-based styling keeps the UI mobile-first and touch-friendly.',
+  'Gemini AI is used for AI-assisted dive-site descriptions and sketch generation through an admin-managed key.',
+];
+
+const libraries = [
+  '@google/genai',
+  'firebase',
+  'react',
+  'react-dom',
+  'vite',
+  'typescript',
+  'tailwindcss',
+  '@tailwindcss/vite',
+  '@vitejs/plugin-react',
+  'lucide-react',
+  'motion',
+  'leaflet',
+  'react-leaflet',
+  'react-leaflet-cluster',
+  'recharts',
+  'd3',
+  'date-fns',
+  'clsx',
+  'tailwind-merge',
+  'dotenv',
+  'express',
+  'tsx',
+  'autoprefixer',
+  '@firebase/eslint-plugin-security-rules',
+  '@types/node',
+  '@types/react',
+  '@types/react-dom',
+  '@types/leaflet',
+  '@types/express',
+];
+
 export function UserGuide({ onBack }: UserGuideProps) {
   return (
     <div className="min-h-screen bg-slate-50 pb-32">
-      <header className="px-6 pt-12 pb-6 bg-white sticky top-0 z-20 shadow-sm border-b border-slate-100">
+      <header className="sticky top-0 z-20 border-b border-slate-100 bg-white px-6 pb-5 pt-12 shadow-sm">
         <div className="flex items-center gap-4">
-          <button 
-            onClick={onBack} 
-            className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full active:scale-90 transition-transform"
+          <button
+            onClick={onBack}
+            aria-label="Back"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 active:scale-95"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="h-6 w-6" />
           </button>
           <div>
-            <div className="flex items-center gap-1.5">
-              <img 
-                src="/logo.png" 
-                alt="" 
-                className="w-4 h-4 rounded-full object-cover"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
-              <h1 className="text-xl font-display font-bold text-maldives-deep">User Guide</h1>
-            </div>
-            <p className="text-[10px] font-bold text-maldives-turquoise uppercase tracking-widest leading-none mt-1">
-              How to use AtollFeeNa
+            <h1 className="font-display text-xl font-bold text-maldives-deep">User Guide</h1>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-maldives-turquoise">
+              AtollFeeNa overview
             </p>
           </div>
         </div>
       </header>
 
-      <div className="p-6 space-y-6">
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-          <h2 className="text-lg font-bold text-maldives-deep mb-3">About AtollFeeNa</h2>
-          <p className="text-sm text-slate-600 leading-relaxed">
-            AtollFeeNa is a premier diving logbook tailored for the Maldives. Record your dives, track marine life, and browse detailed topographical maps of local dive sites.
+      <main className="space-y-5 p-6">
+        <GuideCard icon={<BookOpen />} title="Purpose">
+          <p>
+            AtollFeeNa helps divers log recreational dives while turning useful observations into safety and
+            conservation data for Maldives dive sites.
           </p>
-        </div>
+        </GuideCard>
 
-        <h3 className="font-bold text-sm text-slate-400 uppercase tracking-widest ml-1 mt-8 mb-4">Core Features</h3>
-
-        <div className="space-y-4">
-          <div className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100 flex gap-4">
-            <div className="w-12 h-12 bg-maldives-lagoon/10 rounded-2xl flex items-center justify-center text-maldives-lagoon shrink-0 text-xl font-bold">
-              1
-            </div>
-            <div>
-              <h4 className="font-bold text-maldives-deep text-lg mb-1 flex items-center gap-2">
-                Log a Dive
-              </h4>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                Tap the central + button (Quick Log) to instantly record your dive details, depth, duration, and the marine life you spotted.
+        <section className="space-y-3">
+          <SectionTitle icon={<ShieldCheck />} title="How To Use It" />
+          {userSteps.map((step, index) => (
+            <article key={step.title} className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon">
+                Step {index + 1}
               </p>
-            </div>
-          </div>
+              <h2 className="mt-1 font-display text-lg font-bold text-maldives-deep">{step.title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.text}</p>
+            </article>
+          ))}
+        </section>
 
-          <div className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100 flex gap-4">
-            <div className="w-12 h-12 bg-maldives-lagoon/10 rounded-2xl flex items-center justify-center text-maldives-lagoon shrink-0 text-xl font-bold">
-              2
-            </div>
-            <div>
-              <h4 className="font-bold text-maldives-deep text-lg mb-1 flex items-center gap-2">
-                Explore Sites
-              </h4>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                Browse the Sites tab to view topographic maps, currents, and popularity for famous Maldivian reefs and thilas.
-              </p>
-            </div>
-          </div>
+        <GuideCard icon={<Layers3 />} title="Architecture">
+          <ul className="space-y-2">
+            {architecture.map((item) => (
+              <li key={item} className="text-sm leading-relaxed text-slate-600">
+                {item}
+              </li>
+            ))}
+          </ul>
+        </GuideCard>
 
-          <div className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100 flex gap-4">
-            <div className="w-12 h-12 bg-maldives-lagoon/10 rounded-2xl flex items-center justify-center text-maldives-lagoon shrink-0 text-xl font-bold">
-              3
-            </div>
-            <div>
-              <h4 className="font-bold text-maldives-deep text-lg mb-1 flex items-center gap-2">
-                Field Guide
-              </h4>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                Use the Encyclopedia (Field Guide) to identify marine life. You can mark which species you've seen and even upload your own photos.
-              </p>
-            </div>
-          </div>
+        <GuideCard icon={<Database />} title="Main Database Collections">
+          <p>
+            Core Firestore collections include users, admins, diveSites, diveLogs, siteConditionReports,
+            marineLife, atolls, appSettings, proSubscriptions, paymentTransactions, divePlans, and
+            diveSiteEditSuggestions.
+          </p>
+        </GuideCard>
 
-          <div className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100 flex gap-4">
-            <div className="w-12 h-12 bg-maldives-lagoon/10 rounded-2xl flex items-center justify-center text-maldives-lagoon shrink-0 text-xl font-bold">
-              4
-            </div>
-            <div>
-              <h4 className="font-bold text-maldives-deep text-lg mb-1 flex items-center gap-2">
-                Sync Profile
-              </h4>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                Connect your account in the Me tab to sync your dives securely across devices using your Google ID.
-              </p>
-            </div>
+        <GuideCard icon={<Sparkles />} title="AI Features">
+          <p>
+            Trusted users can draft dive-site descriptions and generate dive-site sketches. Pro users use the
+            administrator-managed Gemini key from App Settings.
+          </p>
+        </GuideCard>
+
+        <GuideCard icon={<Map />} title="Maps And Site Loading">
+          <p>
+            Dive sites are filtered first, then displayed as cards and map markers from the same filtered dataset.
+            Marker clustering keeps the map readable when several sites are near each other.
+          </p>
+        </GuideCard>
+
+        <GuideCard icon={<KeyRound />} title="Libraries Used">
+          <div className="flex flex-wrap gap-2">
+            {libraries.map((library) => (
+              <span key={library} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                {library}
+              </span>
+            ))}
           </div>
-        </div>
-      </div>
+        </GuideCard>
+      </main>
     </div>
+  );
+}
+
+function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
+  return (
+    <div className="flex items-center gap-2 px-1 text-maldives-deep">
+      <span className="[&>svg]:h-4 [&>svg]:w-4">{icon}</span>
+      <h2 className="text-sm font-bold uppercase tracking-widest">{title}</h2>
+    </div>
+  );
+}
+
+function GuideCard({
+  icon,
+  title,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+      <div className="mb-3 flex items-center gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-maldives-lagoon/10 text-maldives-lagoon [&>svg]:h-5 [&>svg]:w-5">
+          {icon}
+        </div>
+        <h2 className="font-display text-lg font-bold text-maldives-deep">{title}</h2>
+      </div>
+      <div className="text-sm leading-relaxed text-slate-600">{children}</div>
+    </section>
   );
 }

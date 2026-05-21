@@ -12,6 +12,7 @@ import {
   signInWithRedirect
 } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer, setDoc } from 'firebase/firestore';
+import { connectFunctionsEmulator, getFunctions } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -46,6 +47,10 @@ try {
 export const db = app ? getFirestore(app, config.firestoreDatabaseId) : null;
 export const auth = app ? getAuth(app) : null;
 export const storage = app ? getStorage(app) : null;
+export const cloudFunctions = app ? getFunctions(app, 'us-central1') : null;
+if (cloudFunctions && import.meta.env.VITE_USE_FUNCTIONS_EMULATOR === 'true') {
+  connectFunctionsEmulator(cloudFunctions, '127.0.0.1', 5001);
+}
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('email');
 googleProvider.addScope('profile');

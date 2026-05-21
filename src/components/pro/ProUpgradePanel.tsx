@@ -81,10 +81,8 @@ export function ProUpgradePanel({
           <ShieldCheck className="h-4 w-4" />
           Payment verification
         </div>
-        Bank of Maldives payment credentials are not stored in the browser. A pending payment record
-        is created first; Pro access is granted only after verified payment is recorded by an
-        authorised admin or server-side process.
-        {!paymentUrlConfigured ? ' Add VITE_BML_PAYMENT_REQUEST_URL to enable direct BML checkout from this button.' : ''}
+        Bank of Maldives Swipe credentials are stored only in Firebase Functions environment
+        variables. Pro access is granted after the server verifies a successful Swipe payment.
       </div>
     </div>
   );
@@ -142,7 +140,7 @@ function UpgradeCard({
         className="mt-5 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-maldives-deep px-4 text-sm font-bold text-white disabled:opacity-60"
       >
         <CreditCard className="h-4 w-4" />
-        {disabled ? 'Creating request...' : paymentUrlConfigured ? 'Upgrade with BML' : 'Create BML Request'}
+        {disabled ? 'Creating request...' : paymentUrlConfigured ? 'Upgrade with BML Swipe' : 'Create BML Request'}
       </button>
     </article>
   );

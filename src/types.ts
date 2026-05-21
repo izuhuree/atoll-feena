@@ -142,7 +142,7 @@ export interface ProSubscription {
   status: ProSubscriptionStatus;
   diveCentreId?: string;
   diveCentreName?: string;
-  provider?: 'bank-of-maldives';
+  provider?: 'bank-of-maldives' | 'bml-swipe';
   sourceTransactionId?: string;
   currentPeriodStart?: string;
   currentPeriodEnd?: string;
@@ -155,14 +155,17 @@ export interface ProSubscription {
 export interface PaymentTransaction {
   id: string;
   userId: string;
-  provider: 'bank-of-maldives';
+  provider: 'bank-of-maldives' | 'bml-swipe';
   tier: Exclude<ProTier, 'free'>;
   status: PaymentStatus;
   amountMvr: number;
   currency: 'MVR';
-  paymentMode: 'payment-request' | 'payment-gateway';
+  paymentMode: 'payment-request' | 'payment-gateway' | 'payment-link';
+  localReference?: string;
   externalReference?: string;
+  externalPaymentId?: string;
   externalPaymentUrl?: string;
+  externalStatus?: string;
   failureReason?: string;
   verifiedAt?: string;
   verifiedBy?: string;

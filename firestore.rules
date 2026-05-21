@@ -284,7 +284,7 @@ service cloud.firestore {
              data.status in ['inactive', 'pending', 'active', 'cancelled', 'expired'] &&
              (data.diveCentreId == null || data.diveCentreId is string && data.diveCentreId.size() <= 128) &&
              (data.diveCentreName == null || data.diveCentreName is string && data.diveCentreName.size() <= 120) &&
-             (data.provider == null || data.provider == 'bank-of-maldives') &&
+             (data.provider == null || data.provider in ['bank-of-maldives', 'bml-swipe']) &&
              (data.sourceTransactionId == null || data.sourceTransactionId is string && data.sourceTransactionId.size() <= 128) &&
              (data.currentPeriodStart == null || data.currentPeriodStart is string) &&
              (data.currentPeriodEnd == null || data.currentPeriodEnd is string) &&
@@ -297,15 +297,15 @@ service cloud.firestore {
     function isValidPaymentTransaction(data) {
       return data is map &&
              data.userId == request.auth.uid &&
-             data.provider == 'bank-of-maldives' &&
+             data.provider in ['bank-of-maldives', 'bml-swipe'] &&
              data.tier in ['individual-diver-pro', 'dive-centre-pro'] &&
              data.status == 'pending' &&
              data.amountMvr is number &&
              data.amountMvr > 0 &&
              data.currency == 'MVR' &&
-             data.paymentMode in ['payment-request', 'payment-gateway'] &&
+             data.paymentMode in ['payment-request', 'payment-gateway', 'payment-link'] &&
              (data.externalReference == null || data.externalReference is string && data.externalReference.size() <= 128) &&
-             (data.externalPaymentUrl == null || data.externalPaymentUrl is string && data.externalPaymentUrl.size() <= 1024) &&
+             (data.externalPaymentId == null || data.externalPaymentId is string && data.externalPaymentId.size() <= 128) && (data.externalPaymentUrl == null || data.externalPaymentUrl is string && data.externalPaymentUrl.size() <= 1024) &&
              data.createdAt is string &&
              data.updatedAt is string;
     }
