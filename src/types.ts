@@ -123,6 +123,95 @@ export interface AppSettings {
   updatedBy?: string;
 }
 
+export type ProTier = 'free' | 'individual-diver-pro' | 'dive-centre-pro';
+export type ProSubscriptionStatus = 'inactive' | 'pending' | 'active' | 'cancelled' | 'expired';
+export type PaymentStatus = 'pending' | 'successful' | 'failed' | 'cancelled';
+export type DivePlanStatus = 'draft' | 'confirmed' | 'completed' | 'cancelled';
+
+export interface ProSubscription {
+  id: string;
+  userId: string;
+  tier: ProTier;
+  status: ProSubscriptionStatus;
+  diveCentreId?: string;
+  diveCentreName?: string;
+  provider?: 'bank-of-maldives';
+  sourceTransactionId?: string;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  userId: string;
+  provider: 'bank-of-maldives';
+  tier: Exclude<ProTier, 'free'>;
+  status: PaymentStatus;
+  amountMvr: number;
+  currency: 'MVR';
+  paymentMode: 'payment-request' | 'payment-gateway';
+  externalReference?: string;
+  externalPaymentUrl?: string;
+  failureReason?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DivePlanParticipant {
+  id: string;
+  name: string;
+  role: 'diver' | 'buddy' | 'guide' | 'instructor' | 'boat-crew';
+  certificationLevel?: string;
+  emergencyContact?: string;
+  notes?: string;
+}
+
+export interface DivePlanChecklistItem {
+  id: string;
+  label: string;
+  checked: boolean;
+  required?: boolean;
+}
+
+export interface DivePlan {
+  id: string;
+  planType: 'individual' | 'dive-centre';
+  ownerId: string;
+  diveCentreId?: string;
+  diveCentreName?: string;
+  siteId: string;
+  siteName: string;
+  atoll: Atoll;
+  island: string;
+  plannedDate: string;
+  plannedTime: string;
+  plannedDepthMeters: number;
+  plannedBottomTimeMinutes: number;
+  gasType: string;
+  buddyDetails?: string;
+  boatName?: string;
+  assignedGuide?: string;
+  assignedInstructor?: string;
+  participants: DivePlanParticipant[];
+  equipmentChecklist: DivePlanChecklistItem[];
+  safetyChecklist: DivePlanChecklistItem[];
+  emergencyContact?: string;
+  nearestSupport?: string;
+  operationalNotes?: string;
+  briefingNotes?: string;
+  emergencyPlan?: string;
+  status: DivePlanStatus;
+  duplicatedFromPlanId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DiveSiteConditionReport {
   visibilityMeters?: number;
   current: CurrentStrength;

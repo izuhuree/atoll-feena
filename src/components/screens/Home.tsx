@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Droplets,
   Fish,
+  Crown,
   Leaf,
   LifeBuoy,
   Map,
@@ -346,6 +347,16 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
           title="Field Guide"
           subtitle="Species and IDs"
           onClick={onOpenGuide}
+          compact
+        />
+      </section>
+
+      <section className="mt-3">
+        <ActionTile
+          icon={Crown}
+          title="Pro Planning"
+          subtitle="Dive plans, checklists, and group briefings"
+          onClick={() => onNavigate?.('pro')}
           compact
         />
       </section>

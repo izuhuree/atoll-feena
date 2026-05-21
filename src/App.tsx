@@ -12,6 +12,7 @@ import { DiveSites } from './components/screens/DiveSites';
 import { QuickLog } from './components/screens/QuickLog';
 import { Logbook } from './components/screens/Logbook';
 import { Profile } from './components/screens/Profile';
+import { Pro } from './components/screens/Pro';
 import { Insights } from './components/screens/Insights';
 import { FieldGuide } from './components/screens/FieldGuide';
 import { WatchPreview } from './components/screens/WatchPreview';
@@ -22,7 +23,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [currentTab, setCurrentTab] = useState<Tab | 'insights' | 'field-guide' | 'watch'>('home');
+  const [currentTab, setCurrentTab] = useState<Tab | 'insights' | 'field-guide' | 'watch' | 'pro'>('home');
   const [showSafety, setShowSafety] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -129,6 +130,7 @@ export default function App() {
       case 'user-guide': return <UserGuide onBack={() => setCurrentTab('home')} />;
       case 'profile': return <Profile user={user} onOpenWatch={() => setCurrentTab('watch')} />;
       case 'watch': return <WatchPreview onBack={() => setCurrentTab('profile')} />;
+      case 'pro': return <Pro user={user} onBack={() => setCurrentTab('home')} />;
       default: return <Home onLogDive={() => setCurrentTab('quick-log')} user={user} onOpenInsights={() => setCurrentTab('insights')} onOpenGuide={() => setCurrentTab('field-guide')} onNavigate={(t) => setCurrentTab(t as any)} />;
     }
   };
@@ -210,7 +212,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {currentTab !== 'quick-log' && currentTab !== 'watch' && currentTab !== 'field-guide' && currentTab !== 'user-guide' && (
+      {currentTab !== 'quick-log' && currentTab !== 'watch' && currentTab !== 'field-guide' && currentTab !== 'user-guide' && currentTab !== 'pro' && (
         <Navigation currentTab={currentTab as any} onTabChange={setCurrentTab as any} />
       )}
     </div>

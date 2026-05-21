@@ -1,35 +1,25 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ---------------------------------------------------------
-    // Helper Functions
-    // ---------------------------------------------------------
-    
     function isSignedIn() {
       return request.auth != null && request.auth.token.email_verified == true;
     }
-
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
-
     function incoming() {
       return request.resource.data;
     }
-
     function existing() {
       return resource.data;
     }
-
     function hasAdminIdentity() {
       return request.auth.token.admin == true ||
              request.auth.token.email == 'hunaruhub@gmail.com';
     }
-
     function isAdmin() {
       return isSignedIn() && (
         hasAdminIdentity() ||
@@ -37,13 +27,11 @@ service cloud.firestore {
         userRole() == 'platform-admin'
       );
     }
-
     function userRole() {
       return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
         : 'recreational-diver';
     }
-
     function canPublishDiveSiteInfo() {
       return isAdmin() || userRole() in [
         'dive-professional',
@@ -57,9 +45,18 @@ service cloud.firestore {
       return canPublishDiveSiteInfo();
     }
 
-    // ---------------------------------------------------------
-    // Validation Schemas
-    // ---------------------------------------------------------
+    function hasIndividualPro(userId) {
+      return exists(/databases/$(database)/documents/proSubscriptions/$(userId)) &&
+             get(/databases/$(database)/documents/proSubscriptions/$(userId)).data.status == 'active' &&
+             get(/databases/$(database)/documents/proSubscriptions/$(userId)).data.tier == 'individual-diver-pro';
+    }
+
+    function hasDiveCentrePro(userId, centreId) {
+      return exists(/databases/$(database)/documents/proSubscriptions/$(userId)) &&
+             get(/databases/$(database)/documents/proSubscriptions/$(userId)).data.status == 'active' &&
+             get(/databases/$(database)/documents/proSubscriptions/$(userId)).data.tier == 'dive-centre-pro' &&
+             get(/databases/$(database)/documents/proSubscriptions/$(userId)).data.diveCentreId == centreId;
+    }
 
     function isValidDiveSite(data) {
       return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
@@ -278,6 +275,73 @@ service cloud.firestore {
              (data.updatedAt == null || data.updatedAt is string);
     }
 
+    function isValidProSubscription(data) {
+      return data is map &&
+             data.userId is string &&
+             data.tier in ['free', 'individual-diver-pro', 'dive-centre-pro'] &&
+             data.status in ['inactive', 'pending', 'active', 'cancelled', 'expired'] &&
+             (data.diveCentreId == null || data.diveCentreId is string && data.diveCentreId.size() <= 128) &&
+             (data.diveCentreName == null || data.diveCentreName is string && data.diveCentreName.size() <= 120) &&
+             (data.provider == null || data.provider == 'bank-of-maldives') &&
+             (data.sourceTransactionId == null || data.sourceTransactionId is string && data.sourceTransactionId.size() <= 128) &&
+             (data.currentPeriodStart == null || data.currentPeriodStart is string) &&
+             (data.currentPeriodEnd == null || data.currentPeriodEnd is string) &&
+             (data.verifiedAt == null || data.verifiedAt is string) &&
+             (data.verifiedBy == null || data.verifiedBy is string) &&
+             data.createdAt is string &&
+             data.updatedAt is string;
+    }
+
+    function isValidPaymentTransaction(data) {
+      return data is map &&
+             data.userId == request.auth.uid &&
+             data.provider == 'bank-of-maldives' &&
+             data.tier in ['individual-diver-pro', 'dive-centre-pro'] &&
+             data.status == 'pending' &&
+             data.amountMvr is number &&
+             data.amountMvr > 0 &&
+             data.currency == 'MVR' &&
+             data.paymentMode in ['payment-request', 'payment-gateway'] &&
+             (data.externalReference == null || data.externalReference is string && data.externalReference.size() <= 128) &&
+             (data.externalPaymentUrl == null || data.externalPaymentUrl is string && data.externalPaymentUrl.size() <= 1024) &&
+             data.createdAt is string &&
+             data.updatedAt is string;
+    }
+
+    function isValidDivePlan(data) {
+      return data is map &&
+             data.id is string &&
+             data.ownerId is string &&
+             data.planType in ['individual', 'dive-centre'] &&
+             data.siteId is string && data.siteId.size() <= 128 &&
+             data.siteName is string && data.siteName.size() <= 120 &&
+             data.atoll is string && data.atoll.size() <= 80 &&
+             data.island is string && data.island.size() <= 100 &&
+             data.plannedDate is string && data.plannedDate.size() == 10 &&
+             data.plannedTime is string && data.plannedTime.size() <= 20 &&
+             data.plannedDepthMeters is number && data.plannedDepthMeters >= 4 && data.plannedDepthMeters <= 60 &&
+             data.plannedBottomTimeMinutes is number && data.plannedBottomTimeMinutes >= 1 && data.plannedBottomTimeMinutes <= 300 &&
+             data.gasType is string && data.gasType.size() <= 40 &&
+             data.participants is list && data.participants.size() <= 60 &&
+             data.equipmentChecklist is list && data.equipmentChecklist.size() <= 40 &&
+             data.safetyChecklist is list && data.safetyChecklist.size() <= 40 &&
+             data.status in ['draft', 'confirmed', 'completed', 'cancelled'] &&
+             (data.diveCentreId == null || data.diveCentreId is string && data.diveCentreId.size() <= 128) &&
+             (data.diveCentreName == null || data.diveCentreName is string && data.diveCentreName.size() <= 120) &&
+             (data.buddyDetails == null || data.buddyDetails is string && data.buddyDetails.size() <= 500) &&
+             (data.boatName == null || data.boatName is string && data.boatName.size() <= 100) &&
+             (data.assignedGuide == null || data.assignedGuide is string && data.assignedGuide.size() <= 120) &&
+             (data.assignedInstructor == null || data.assignedInstructor is string && data.assignedInstructor.size() <= 120) &&
+             (data.emergencyContact == null || data.emergencyContact is string && data.emergencyContact.size() <= 300) &&
+             (data.nearestSupport == null || data.nearestSupport is string && data.nearestSupport.size() <= 300) &&
+             (data.operationalNotes == null || data.operationalNotes is string && data.operationalNotes.size() <= 2000) &&
+             (data.briefingNotes == null || data.briefingNotes is string && data.briefingNotes.size() <= 2000) &&
+             (data.emergencyPlan == null || data.emergencyPlan is string && data.emergencyPlan.size() <= 2000) &&
+             (data.duplicatedFromPlanId == null || data.duplicatedFromPlanId is string && data.duplicatedFromPlanId.size() <= 128) &&
+             data.createdAt is string &&
+             data.updatedAt is string;
+    }
+
     function isValidCertificationProfile(data) {
       return data is map &&
              data.keys().hasOnly(['agency', 'level', 'certificationNumber', 'issueDate', 'instructorName']) &&
@@ -288,17 +352,10 @@ service cloud.firestore {
              (data.instructorName == null || data.instructorName is string && data.instructorName.size() <= 128);
     }
 
-    // ---------------------------------------------------------
-    // Rules
-    // ---------------------------------------------------------
-
-    // Platform admins have full oversight across app data, including role
-    // management, review queues, imported records, and corrective edits.
     match /{document=**} {
       allow read, write: if isAdmin();
     }
 
-    // Dive Sites
     match /diveSites/{siteId} {
       allow read: if true;
       allow create: if isSignedIn() && canPublishDiveSiteInfo() && isValidId(siteId) && isValidDiveSite(incoming()) && incoming().keys().hasAll(['name', 'atoll', 'difficulty']) && incoming().keys().size() >= 3;
@@ -324,7 +381,6 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Marine Life
     match /marineLife/{speciesId} {
       allow read: if true;
       allow create: if isSignedIn() && isValidId(speciesId) && isValidMarineLife(incoming()) && incoming().keys().hasAll(['name', 'scientificName', 'category']) && incoming().keys().size() >= 3;
@@ -334,7 +390,6 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Configurable observation choices used by quick logging.
     match /observationCatalog/{catalogId} {
       allow read: if true;
       allow create, update: if isAdmin() &&
@@ -362,20 +417,56 @@ service cloud.firestore {
       allow write: if isAdmin() && isValidId(settingsId) && isValidAppSettings(incoming());
     }
 
-    // Configurable atoll list used by forms and filters.
+    match /proSubscriptions/{userId} {
+      allow read: if (isOwner(userId) || isAdmin()) && isValidId(userId);
+      allow create, update, delete: if isAdmin() && isValidId(userId) && isValidProSubscription(incoming()) && incoming().userId == userId;
+    }
+
+    match /paymentTransactions/{transactionId} {
+      allow get, list: if isSignedIn() && isValidId(transactionId) && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidId(transactionId) && isValidPaymentTransaction(incoming());
+      allow update, delete: if isAdmin() && isValidId(transactionId);
+    }
+
+    match /divePlans/{planId} {
+      allow get, list: if isSignedIn() && isValidId(planId) && (
+        isAdmin() ||
+        resource.data.ownerId == request.auth.uid ||
+        (resource.data.planType == 'dive-centre' && hasDiveCentrePro(request.auth.uid, resource.data.diveCentreId))
+      );
+      allow create: if isSignedIn() &&
+        isValidId(planId) &&
+        isValidDivePlan(incoming()) &&
+        incoming().id == planId &&
+        (
+          (incoming().planType == 'individual' && incoming().ownerId == request.auth.uid && hasIndividualPro(request.auth.uid)) ||
+          (incoming().planType == 'dive-centre' && incoming().ownerId == request.auth.uid && hasDiveCentrePro(request.auth.uid, incoming().diveCentreId))
+        );
+      allow update: if isSignedIn() &&
+        isValidId(planId) &&
+        isValidDivePlan(incoming()) &&
+        incoming().id == planId &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        (
+          isAdmin() ||
+          (existing().planType == 'individual' && existing().ownerId == request.auth.uid && hasIndividualPro(request.auth.uid)) ||
+          (existing().planType == 'dive-centre' && hasDiveCentrePro(request.auth.uid, existing().diveCentreId))
+        );
+      allow delete: if isAdmin();
+    }
+
     match /atolls/{atollId} {
       allow read: if true;
       allow create, update: if isAdmin() && isValidId(atollId) && isValidAtoll(incoming());
       allow delete: if isAdmin();
     }
 
-    // Admin marker docs. Users may only check their own marker; no listing.
     match /admins/{userId} {
       allow get: if isOwner(userId) && isValidId(userId);
       allow list, create, update, delete: if false;
     }
 
-    // Dive Logs
     match /diveLogs/{logId} {
       allow get: if isSignedIn() && isValidId(logId) && isOwner(existing().userId);
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
@@ -389,7 +480,6 @@ service cloud.firestore {
       allow delete: if isOwner(existing().userId) && isValidId(logId);
     }
 
-    // User Profiles
     match /users/{userId} {
       allow read: if isOwner(userId) && isValidId(userId);
       allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming()) && incoming().uid == userId && incoming().role == null;
