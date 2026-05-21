@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { CertificationProfile } from '../../types';
 import { useUserProfile } from '../../hooks/useUserProfile';
+import { AiSettingsSection } from '../profile/AiSettingsSection';
 
 interface ProfileProps {
   user: User | null;
@@ -321,6 +322,8 @@ export function Profile({ user, onOpenWatch }: ProfileProps) {
             </div>
           )}
         </section>
+
+        <AiSettingsSection />
 
         <section>
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-2">Integrations</h3>

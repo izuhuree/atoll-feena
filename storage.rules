@@ -7,9 +7,26 @@ service firebase.storage {
     }
 
     function isAdmin() {
-      // Mirror Firestore admin rule: requires a doc at /admins/{uid}
+      return isSignedIn() && (
+        firestore.exists(/databases/atollfeena/documents/admins/$(request.auth.uid)) ||
+        userRole() == 'platform-admin'
+      );
+    }
+
+    function userRole() {
       return isSignedIn() &&
-             firestore.exists(/databases/atollfeena/documents/admins/$(request.auth.uid));
+             firestore.exists(/databases/atollfeena/documents/users/$(request.auth.uid))
+        ? firestore.get(/databases/atollfeena/documents/users/$(request.auth.uid)).data.role
+        : 'recreational-diver';
+    }
+
+    function canGenerateDiveSiteSketches() {
+      return isAdmin() || userRole() in [
+        'dive-professional',
+        'dive-centre-manager',
+        'marine-science-reviewer',
+        'platform-admin'
+      ];
     }
 
     match /users/{userId}/profile/{fileName} {
@@ -21,16 +38,19 @@ service firebase.storage {
     }
 
     // AI-generated dive-site sketches. Publicly readable so non-admins see
-    // the cached image; only admins can (re)generate and upload.
+    // the cached image; trusted reviewers can generate; admins bypass object
+    // constraints so they can resolve failed uploads and repair app media.
     match /divesite-sketches/{siteId} {
       allow read: if true;
-      allow write: if isAdmin() &&
-                   request.resource.size < 4 * 1024 * 1024 &&
-                   request.resource.contentType.matches('image/.*');
+      allow write: if isAdmin() || (
+        canGenerateDiveSiteSketches() &&
+        request.resource.size < 10 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*')
+      );
     }
 
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read, write: if isAdmin();
     }
   }
 }

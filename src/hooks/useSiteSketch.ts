@@ -6,22 +6,29 @@ import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, storage, auth } from '../lib/firebase';
 import { DiveSite } from '../types';
 import { buildSketchPrompt } from '../lib/sketchPrompt';
+import { getGeminiApiKey } from '../lib/aiSettings';
 
 type Status = 'idle' | 'loading-existing' | 'generating' | 'ready' | 'error';
 
-const SKETCH_MODEL = 'imagen-3.0-generate-002';
+const SKETCH_MODEL = import.meta.env.VITE_GEMINI_IMAGE_MODEL || 'imagen-4.0-generate-001';
+const SKETCH_ROLES = [
+  'dive-professional',
+  'dive-centre-manager',
+  'marine-science-reviewer',
+  'platform-admin',
+];
 
 /**
  * Hybrid procedural-SVG + AI-image hook for dive-site sketches.
  *
  *   1. On mount, look up `diveSites/{id}.aiSketchUrl` in Firestore. If present,
  *      surface it immediately — every visitor sees the cached image.
- *   2. If absent **and** the current user is an admin, expose `generate()` so
- *      they can request a fresh sketch from Gemini Imagen. The image bytes are
+ *   2. If absent and the current user is trusted, expose `generate()` so they
+ *      can request a fresh sketch from Gemini Imagen. The image bytes are
  *      returned as base64, uploaded to Firebase Storage at
  *      `divesite-sketches/{id}.png`, then the public URL is persisted back to
  *      Firestore so subsequent users skip the regeneration cost.
- *   3. Non-admins fall back to the procedural SVG (rendered by SiteSketchSvg).
+ *   3. Other users fall back to the procedural SVG (rendered by SiteSketchSvg).
  *
  * We never call Gemini twice for the same site — caching is the whole point.
  */
@@ -69,7 +76,16 @@ export function useSiteSketch(site: DiveSite) {
       }
 
       getDoc(doc(db, 'admins', user.uid))
-        .then((snap) => setCanGenerate(snap.exists()))
+        .then(async (snap) => {
+          if (snap.exists()) {
+            setCanGenerate(true);
+            return;
+          }
+
+          const userSnap = await getDoc(doc(db, 'users', user.uid));
+          const role = userSnap.data()?.role;
+          setCanGenerate(typeof role === 'string' && SKETCH_ROLES.includes(role));
+        })
         .catch((err) => {
           console.error('useSiteSketch.admin', err);
           setCanGenerate(false);
@@ -77,9 +93,9 @@ export function useSiteSketch(site: DiveSite) {
     });
   }, []);
 
-  const generate = useCallback(async () => {
+  const generate = useCallback(async (sketchInstructions?: string) => {
     if (!canGenerate) {
-      setError('Only admins can generate AI sketches.');
+      setError('Only trusted dive-site reviewers can generate AI sketches.');
       return;
     }
     if (!db || !storage) {
@@ -87,9 +103,9 @@ export function useSiteSketch(site: DiveSite) {
       return;
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
-      setError('Missing GEMINI_API_KEY — set it in your .env file.');
+    const apiKey = getGeminiApiKey();
+    if (!apiKey) {
+      setError('Add a Gemini API key in Profile > AI Settings before generating sketches.');
       return;
     }
 
@@ -98,7 +114,10 @@ export function useSiteSketch(site: DiveSite) {
 
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const prompt = buildSketchPrompt(site);
+      const siteForSketch = sketchInstructions?.trim()
+        ? { ...site, sketchInstructions: sketchInstructions.trim() }
+        : site;
+      const prompt = buildSketchPrompt(siteForSketch);
       const generatedAt = new Date().toISOString();
 
       // Imagen 3 returns base64-encoded PNG bytes (no data URL prefix).

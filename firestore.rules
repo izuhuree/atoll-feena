@@ -26,7 +26,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        userRole() == 'platform-admin'
+      );
     }
 
     function userRole() {
@@ -195,9 +198,10 @@ service cloud.firestore {
     // Rules
     // ---------------------------------------------------------
 
-    // Default Deny
+    // Platform admins have full oversight across app data, including role
+    // management, review queues, imported records, and corrective edits.
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isAdmin();
     }
 
     // Dive Sites
