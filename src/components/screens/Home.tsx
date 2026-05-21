@@ -75,6 +75,52 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
 
       <HeroBanner onPrimaryAction={onLogDive} activityPoints={dashboard.activityMapPoints} />
 
+      <section className="mt-4 grid grid-cols-3 gap-3">
+        <ActionTile
+          icon={ShipWheel}
+          title="Log Dive"
+          subtitle="Add reef and safety data"
+          onClick={onLogDive}
+        />
+        <ActionTile
+          icon={Radar}
+          title="Insights"
+          subtitle="Review dive trends"
+          onClick={onOpenInsights}
+        />
+        <ActionTile
+          icon={MapPinned}
+          title="Sites"
+          subtitle="Site intelligence"
+          onClick={() => onNavigate?.('sites')}
+        />
+      </section>
+
+      <section className="mt-3 grid grid-cols-2 gap-3">
+        <ActionTile
+          icon={Crown}
+          title="Upgrade to Pro"
+          subtitle="Dive plans and briefings"
+          onClick={() => onNavigate?.('pro')}
+          compact
+          featured
+        />
+        <ActionTile
+          icon={Anchor}
+          title="Logbook"
+          subtitle="Saved dive records"
+          onClick={() => onNavigate?.('logbook')}
+          compact
+        />
+        <ActionTile
+          icon={Fish}
+          title="Field Guide"
+          subtitle="Species and IDs"
+          onClick={onOpenGuide}
+          compact
+        />
+      </section>
+
       <section className="mt-6">
         <SectionHeading
           eyebrow="Last 30 Days"
@@ -313,53 +359,6 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
         </DashboardCard>
       </section>
 
-      <section className="mt-8 grid grid-cols-3 gap-3">
-        <ActionTile
-          icon={ShipWheel}
-          title="Log Dive"
-          subtitle="Add reef and safety data"
-          onClick={onLogDive}
-        />
-        <ActionTile
-          icon={Radar}
-          title="Insights"
-          subtitle="Review your dive trends"
-          onClick={onOpenInsights}
-        />
-        <ActionTile
-          icon={MapPinned}
-          title="Sites"
-          subtitle="View site intelligence"
-          onClick={() => onNavigate?.('sites')}
-        />
-      </section>
-
-      <section className="mt-4 grid grid-cols-2 gap-3">
-        <ActionTile
-          icon={Anchor}
-          title="Logbook"
-          subtitle="Your saved dive records"
-          onClick={() => onNavigate?.('logbook')}
-          compact
-        />
-        <ActionTile
-          icon={Fish}
-          title="Field Guide"
-          subtitle="Species and IDs"
-          onClick={onOpenGuide}
-          compact
-        />
-      </section>
-
-      <section className="mt-3">
-        <ActionTile
-          icon={Crown}
-          title="Pro Planning"
-          subtitle="Dive plans, checklists, and group briefings"
-          onClick={() => onNavigate?.('pro')}
-          compact
-        />
-      </section>
     </div>
   );
 }

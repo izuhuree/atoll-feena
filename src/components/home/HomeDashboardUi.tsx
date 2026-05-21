@@ -100,19 +100,23 @@ export function ActionTile({
   subtitle,
   onClick,
   compact = false,
+  featured = false,
 }: {
   icon: LucideIcon;
   title: string;
   subtitle: string;
   onClick?: () => void;
   compact?: boolean;
+  featured?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`rounded-2xl border border-slate-100 bg-white text-left shadow-sm active:scale-[0.98] ${compact ? 'p-3' : 'p-4'}`}
+      className={`rounded-2xl border text-left shadow-sm active:scale-[0.98] ${compact ? 'p-3' : 'p-4'} ${
+        featured ? 'border-cyan-100 bg-cyan-50/80' : 'border-slate-100 bg-white'
+      }`}
     >
-      <Icon className={`text-maldives-lagoon ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
+      <Icon className={`${featured ? 'text-cyan-700' : 'text-maldives-lagoon'} ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
       <p className={`mt-2 font-display font-bold text-maldives-deep ${compact ? 'text-sm' : 'text-base'}`}>
         {title}
       </p>

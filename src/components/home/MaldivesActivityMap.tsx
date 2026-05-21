@@ -9,12 +9,12 @@ interface ActivityMapPoint {
 
 export function MaldivesActivityMap({ points }: { points: ActivityMapPoint[] }) {
   const fallbackAtolls = [
-    { x: 58, y: 18, r: 9 },
-    { x: 50, y: 31, r: 11 },
-    { x: 54, y: 45, r: 13 },
-    { x: 47, y: 60, r: 10 },
-    { x: 52, y: 75, r: 12 },
-    { x: 45, y: 89, r: 9 },
+    { x: 59, y: 13, r: 8, label: 'North' },
+    { x: 51, y: 26, r: 10, label: 'Baa' },
+    { x: 57, y: 40, r: 12, label: 'Malé' },
+    { x: 49, y: 55, r: 11, label: 'Ari' },
+    { x: 54, y: 70, r: 11, label: 'Laamu' },
+    { x: 44, y: 88, r: 8, label: 'Addu' },
   ];
   const projectedPoints = points
     .map((point) => ({
@@ -25,34 +25,63 @@ export function MaldivesActivityMap({ points }: { points: ActivityMapPoint[] }) 
     .filter((point) => point.x >= 8 && point.x <= 92 && point.y >= 4 && point.y <= 98);
 
   return (
-    <div className="pointer-events-none absolute inset-y-0 right-0 w-full opacity-45 sm:w-[58%]">
+    <div className="pointer-events-none absolute inset-y-0 right-0 w-full opacity-70 sm:w-[64%]">
       <svg viewBox="0 0 100 100" className="h-full w-full" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <filter id="mapGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="0.7" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
         <path
-          d="M62 4 C48 17 57 30 48 42 C40 53 54 64 43 77 C37 85 42 94 33 100"
+          d="M63 1 C53 12 58 23 50 34 C42 45 55 56 45 69 C37 80 42 91 34 100"
           fill="none"
-          stroke="rgba(255,255,255,0.26)"
-          strokeWidth="0.8"
-          strokeDasharray="2 4"
+          stroke="rgba(255,255,255,0.42)"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeDasharray="1 5"
         />
         {fallbackAtolls.map((atoll) => (
-          <g key={`${atoll.x}-${atoll.y}`}>
+          <g key={atoll.label} filter="url(#mapGlow)">
             <ellipse
               cx={atoll.x}
               cy={atoll.y}
               rx={atoll.r}
-              ry={atoll.r * 0.42}
+              ry={atoll.r * 0.48}
+              fill="rgba(14,165,167,0.16)"
+              stroke="rgba(255,255,255,0.58)"
+              strokeWidth="1.1"
+              transform={`rotate(-22 ${atoll.x} ${atoll.y})`}
+            />
+            <ellipse
+              cx={atoll.x}
+              cy={atoll.y}
+              rx={atoll.r * 0.55}
+              ry={atoll.r * 0.22}
               fill="none"
-              stroke="rgba(255,255,255,0.22)"
+              stroke="rgba(187,247,208,0.44)"
               strokeWidth="0.8"
               transform={`rotate(-22 ${atoll.x} ${atoll.y})`}
             />
-            <circle cx={atoll.x - 1} cy={atoll.y} r="1.2" fill="rgba(255,255,255,0.28)" />
+            <circle cx={atoll.x - 1.5} cy={atoll.y + 0.3} r="1.8" fill="rgba(255,255,255,0.78)" />
+            <text
+              x={atoll.x + atoll.r * 0.55}
+              y={atoll.y + 1}
+              fill="rgba(255,255,255,0.58)"
+              fontSize="3.2"
+              fontWeight="700"
+            >
+              {atoll.label}
+            </text>
           </g>
         ))}
         {projectedPoints.map((point) => (
           <g key={point.id}>
-            <circle cx={point.x} cy={point.y} r={Math.min(5, 2 + point.reports * 0.45)} fill="rgba(255,255,255,0.2)" />
-            <circle cx={point.x} cy={point.y} r={Math.min(2.8, 1.2 + point.reports * 0.2)} fill="rgba(187,247,208,0.9)" />
+            <circle cx={point.x} cy={point.y} r={Math.min(5, 2 + point.reports * 0.45)} fill="rgba(255,255,255,0.24)" />
+            <circle cx={point.x} cy={point.y} r={Math.min(2.8, 1.2 + point.reports * 0.2)} fill="rgba(187,247,208,0.95)" />
           </g>
         ))}
       </svg>
