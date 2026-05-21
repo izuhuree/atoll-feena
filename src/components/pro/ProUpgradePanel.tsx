@@ -18,6 +18,22 @@ export function ProUpgradePanel({ isCreatingPayment, onUpgrade }: ProUpgradePane
         </p>
       </section>
 
+      <section className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="mb-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon">Compare plans</p>
+          <h3 className="mt-1 font-display text-xl font-bold text-maldives-deep">Free vs Pro</h3>
+        </div>
+        <div className="overflow-hidden rounded-2xl border border-slate-100">
+          <CompareRow feature="Personal dive logging" free="Included" pro="Included" />
+          <CompareRow feature="Citizen-science observations" free="Basic" pro="Included" />
+          <CompareRow feature="Recent site conditions" free="View reports" pro="Plan with reports" />
+          <CompareRow feature="Saved dive plans" free="Not included" pro="Included" />
+          <CompareRow feature="Buddy and equipment checklist" free="Not included" pro="Included" />
+          <CompareRow feature="Dive centre group planning" free="Not included" pro="Dive Centre Pro" />
+          <CompareRow feature="Briefing and operational notes" free="Not included" pro="Dive Centre Pro" />
+        </div>
+      </section>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <UpgradeCard
           icon={UserRound}
@@ -46,6 +62,16 @@ export function ProUpgradePanel({ isCreatingPayment, onUpgrade }: ProUpgradePane
         is created first; Pro access is granted only after verified payment is recorded by an
         authorised admin or server-side process.
       </div>
+    </div>
+  );
+}
+
+function CompareRow({ feature, free, pro }: { feature: string; free: string; pro: string }) {
+  return (
+    <div className="grid grid-cols-[1.25fr_0.85fr_0.85fr] border-b border-slate-100 last:border-b-0">
+      <div className="bg-white px-3 py-3 text-xs font-bold text-maldives-deep">{feature}</div>
+      <div className="bg-slate-50 px-2 py-3 text-center text-[11px] font-semibold text-slate-500">{free}</div>
+      <div className="bg-cyan-50/70 px-2 py-3 text-center text-[11px] font-bold text-cyan-800">{pro}</div>
     </div>
   );
 }

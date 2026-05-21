@@ -229,7 +229,7 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
         </div>
       </header>
 
-      <div className="px-6 py-6 pb-40">
+      <div className="px-6 py-6 pb-[calc(220px+env(safe-area-inset-bottom))]">
         <input
           type="file"
           ref={fileInputRef}
@@ -264,7 +264,7 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
           <DiveReviewPanel formData={formData} setFormData={setFormData} calculateSAC={calculateSAC} />
         )}
 
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/90 backdrop-blur-md z-20 border-t border-slate-100">
+        <div className="fixed bottom-[calc(68px+env(safe-area-inset-bottom))] left-0 right-0 p-4 bg-white/90 backdrop-blur-md z-40 border-t border-slate-100">
           <div className="max-w-md mx-auto space-y-2">
             {showStepError && !isStepValid() && (
               <p className="text-xs text-rose-500 font-medium text-center" role="alert">

@@ -40,7 +40,7 @@ export function Navigation({ currentTab, onTabChange }: NavigationProps) {
   return (
     <nav
       aria-label="Primary"
-      className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-100 px-2 pb-safe pt-1 z-50"
+      className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-100 px-2 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-1 z-50"
     >
       <div className="max-w-md mx-auto flex items-stretch justify-between">
         {tabs.map((tab) => {

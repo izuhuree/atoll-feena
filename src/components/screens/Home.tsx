@@ -39,9 +39,10 @@ interface HomeProps {
   onOpenInsights: () => void;
   onOpenGuide: () => void;
   onNavigate?: (tab: string) => void;
+  onExit?: () => void | Promise<void>;
 }
 
-export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate }: HomeProps) {
+export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate, onExit }: HomeProps) {
   const firstName = user?.displayName?.split(' ')[0];
   const dashboard = useHomeDashboard();
   const [showAllMetrics, setShowAllMetrics] = useState(false);
@@ -52,7 +53,7 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
 
   return (
     <div className="px-4 pt-8 pb-24 sm:px-6">
-      <header className="mb-6 flex items-center justify-between gap-3">
+      <header className="mb-6 flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
           <img
             src="/logo.png"
@@ -71,9 +72,31 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
             </h1>
           </div>
         </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <HeaderAction label="Home" onClick={() => onNavigate?.('home')} />
+          <HeaderAction label="Pro" onClick={() => onNavigate?.('pro')} featured />
+          <HeaderAction label="Exit" onClick={onExit} />
+        </div>
       </header>
 
       <HeroBanner onPrimaryAction={onLogDive} activityPoints={dashboard.activityMapPoints} />
+
+      <button
+        type="button"
+        onClick={() => onNavigate?.('pro')}
+        className="mt-4 flex w-full items-center gap-4 rounded-3xl border border-cyan-100 bg-white p-4 text-left shadow-sm active:scale-[0.99]"
+      >
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
+          <Crown className="h-6 w-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-lg font-bold text-maldives-deep">Upgrade to Pro</p>
+          <p className="text-xs leading-relaxed text-slate-500">
+            Compare Free and Pro dive planning for individual divers and dive centres.
+          </p>
+        </div>
+        <ArrowRight className="h-5 w-5 shrink-0 text-maldives-lagoon" />
+      </button>
 
       <section className="mt-4 grid grid-cols-3 gap-3">
         <ActionTile
@@ -99,7 +122,7 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
       <section className="mt-3 grid grid-cols-2 gap-3">
         <ActionTile
           icon={Crown}
-          title="Upgrade to Pro"
+          title="Pro"
           subtitle="Dive plans and briefings"
           onClick={() => onNavigate?.('pro')}
           compact
@@ -395,5 +418,27 @@ function HeroBanner({
       </button>
       </div>
     </motion.section>
+  );
+}
+
+function HeaderAction({
+  label,
+  onClick,
+  featured = false,
+}: {
+  label: string;
+  onClick?: () => void | Promise<void>;
+  featured?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`min-h-[40px] rounded-xl px-2.5 text-[11px] font-bold active:scale-[0.98] ${
+        featured ? 'bg-cyan-50 text-cyan-800' : 'bg-white text-slate-500'
+      }`}
+    >
+      {label}
+    </button>
   );
 }

@@ -5,9 +5,9 @@
 
 import { useState, useEffect } from 'react';
 import { auth, ensureAuthPersistence, syncProfile, isFirebaseConfigured, signInWithGoogle } from './lib/firebase';
-import { getRedirectResult, onAuthStateChanged, User } from 'firebase/auth';
+import { getRedirectResult, onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { Navigation, Tab } from './components/Navigation';
-import { Home } from './components/screens/Home';
+import { Home as HomeScreen } from './components/screens/Home';
 import { DiveSites } from './components/screens/DiveSites';
 import { QuickLog } from './components/screens/QuickLog';
 import { Logbook } from './components/screens/Logbook';
@@ -120,8 +120,21 @@ export default function App() {
   };
 
   const renderTab = () => {
+    const homeScreen = (
+      <HomeScreen
+        onLogDive={() => setCurrentTab('quick-log')}
+        user={user}
+        onOpenInsights={() => setCurrentTab('insights')}
+        onOpenGuide={() => setCurrentTab('field-guide')}
+        onNavigate={(t) => setCurrentTab(t as any)}
+        onExit={async () => {
+          if (auth) await signOut(auth);
+          setCurrentTab('home');
+        }}
+      />
+    );
     switch (currentTab) {
-      case 'home': return <Home onLogDive={() => setCurrentTab('quick-log')} user={user} onOpenInsights={() => setCurrentTab('insights')} onOpenGuide={() => setCurrentTab('field-guide')} onNavigate={(t) => setCurrentTab(t as any)} />;
+      case 'home': return homeScreen;
       case 'sites': return <DiveSites user={user} onLogAtSite={() => setCurrentTab('quick-log')} />;
       case 'quick-log': return <QuickLog onComplete={() => setCurrentTab('logbook')} onCancel={() => setCurrentTab('home')} />;
       case 'logbook': return <Logbook onLogDive={() => setCurrentTab('quick-log')} />;
@@ -131,7 +144,7 @@ export default function App() {
       case 'profile': return <Profile user={user} onOpenWatch={() => setCurrentTab('watch')} />;
       case 'watch': return <WatchPreview onBack={() => setCurrentTab('profile')} />;
       case 'pro': return <Pro user={user} onBack={() => setCurrentTab('home')} />;
-      default: return <Home onLogDive={() => setCurrentTab('quick-log')} user={user} onOpenInsights={() => setCurrentTab('insights')} onOpenGuide={() => setCurrentTab('field-guide')} onNavigate={(t) => setCurrentTab(t as any)} />;
+      default: return homeScreen;
     }
   };
 
@@ -212,9 +225,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {currentTab !== 'quick-log' && currentTab !== 'watch' && currentTab !== 'field-guide' && currentTab !== 'user-guide' && currentTab !== 'pro' && (
-        <Navigation currentTab={currentTab as any} onTabChange={setCurrentTab as any} />
-      )}
+      <Navigation currentTab={currentTab as any} onTabChange={setCurrentTab as any} />
     </div>
   );
 }

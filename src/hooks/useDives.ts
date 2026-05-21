@@ -54,14 +54,15 @@ export function useDives() {
     const diveId = dive.id || `log-${Date.now()}`;
     const now = Timestamp.now().toDate().toISOString();
     try {
-      await setDoc(doc(db, path, diveId), {
+      const payload = stripUndefined({
         ...dive,
         id: diveId,
         userId: auth.currentUser.uid,
         syncStatus: 'synced',
         createdAt: now,
         updatedAt: now,
-      }, { merge: true });
+      });
+      await setDoc(doc(db, path, diveId), payload, { merge: true });
       try {
         await publishSiteConditionReport(diveId, dive, now);
       } catch (reportError) {
@@ -74,6 +75,20 @@ export function useDives() {
   };
 
   return { dives, loading, addDive };
+}
+
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map(stripUndefined) as T;
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, child]) => child !== undefined)
+        .map(([key, child]) => [key, stripUndefined(child)])
+    ) as T;
+  }
+  return value;
 }
 
 async function publishSiteConditionReport(
@@ -90,7 +105,7 @@ async function publishSiteConditionReport(
 
   const userSnap = await getDoc(doc(db, 'users', auth.currentUser.uid));
   const profile = userSnap.exists() ? userSnap.data() as Partial<UserProfile> : {};
-  const report: SiteConditionReport = {
+  const report: SiteConditionReport = stripUndefined({
     id: diveId,
     siteId: dive.siteId,
     siteName: dive.customSiteName || 'Unknown site',
@@ -108,7 +123,7 @@ async function publishSiteConditionReport(
     verificationStatus: dive.observationMetadata?.verificationStatus || 'unverified',
     privacy,
     createdAt,
-  };
+  });
 
   await setDoc(doc(db, 'siteConditionReports', diveId), report, { merge: true });
 }

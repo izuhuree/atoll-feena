@@ -40,24 +40,20 @@ service cloud.firestore {
         'platform-admin'
       ];
     }
-
     function canReviewDiveSiteSuggestions() {
       return canPublishDiveSiteInfo();
     }
-
     function hasIndividualPro(userId) {
       return exists(/databases/$(database)/documents/proSubscriptions/$(userId)) &&
              get(/databases/$(database)/documents/proSubscriptions/$(userId)).data.status == 'active' &&
              get(/databases/$(database)/documents/proSubscriptions/$(userId)).data.tier == 'individual-diver-pro';
     }
-
     function hasDiveCentrePro(userId, centreId) {
       return exists(/databases/$(database)/documents/proSubscriptions/$(userId)) &&
              get(/databases/$(database)/documents/proSubscriptions/$(userId)).data.status == 'active' &&
              get(/databases/$(database)/documents/proSubscriptions/$(userId)).data.tier == 'dive-centre-pro' &&
              get(/databases/$(database)/documents/proSubscriptions/$(userId)).data.diveCentreId == centreId;
     }
-
     function isValidDiveSite(data) {
       return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
              data.atoll is string && data.atoll.size() > 0 &&
@@ -95,7 +91,6 @@ service cloud.firestore {
              (data.updatedAt == null || data.updatedAt is string) &&
              (data.createdAt == null || data.createdAt is string);
     }
-
     function isValidMarineLife(data) {
       return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
              data.scientificName is string && data.scientificName.size() <= 100 &&
@@ -105,7 +100,6 @@ service cloud.firestore {
              (data.updatedAt == null || data.updatedAt is string) &&
              (data.createdAt == null || data.createdAt is string);
     }
-
     function isValidDiveLog(data) {
       return data is map &&
              data.userId == request.auth.uid &&
@@ -149,6 +143,14 @@ service cloud.firestore {
              (data.debrisObservations == null || data.debrisObservations is list && data.debrisObservations.size() <= 20) &&
              (data.observationMetadata == null || isValidObservationMetadata(data.observationMetadata)) &&
              (data.updatedAt == null || data.updatedAt is string) &&
+             (data.createdAt == null || data.createdAt is string);
+    }
+
+    function isValidDiveLogCreate(data) {
+      return data is map &&
+             data.userId == request.auth.uid &&
+             data.date is string && data.siteId is string && data.siteId.size() <= 128 &&
+             (data.id == null || data.id is string && data.id.size() <= 128) &&
              (data.createdAt == null || data.createdAt is string);
     }
 
@@ -470,7 +472,7 @@ service cloud.firestore {
     match /diveLogs/{logId} {
       allow get: if isSignedIn() && isValidId(logId) && isOwner(existing().userId);
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && isValidId(logId) && isValidDiveLog(incoming()) && 
+      allow create: if isSignedIn() && isValidId(logId) && isValidDiveLogCreate(incoming()) &&
                     incoming().keys().hasAll(['userId', 'date', 'siteId']) && 
                     incoming().userId == request.auth.uid;
       allow update: if isOwner(existing().userId) && isValidId(logId) && isValidDiveLog(incoming()) && 
@@ -487,6 +489,5 @@ service cloud.firestore {
                     incoming().uid == userId &&
                     incoming().diff(existing()).affectedKeys().hasOnly(['name', 'email', 'photoURL', 'homeCountry', 'units', 'certificationProfile', 'updatedAt']);
     }
-
   }
 }

@@ -72,6 +72,22 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
     }, {});
   }, [filteredSites]);
 
+  const siteStats = useMemo(() => {
+    const atollCount = new Set(filteredSites.map((site) => site.atoll).filter(Boolean)).size;
+    const islandCount = new Set(filteredSites.map((site) => site.islandBase).filter(Boolean)).size;
+    return [
+      { label: 'Loaded', value: filteredSites.length },
+      { label: 'Atolls', value: atollCount },
+      { label: 'Islands', value: islandCount },
+      { label: 'Mapped', value: filteredSites.filter((site) => site.coordinates).length },
+      { label: 'Protected', value: filteredSites.filter((site) => site.isProtected).length },
+      {
+        label: 'Stronger Current',
+        value: filteredSites.filter((site) => site.current === 'strong' || site.current === 'very strong').length,
+      },
+    ];
+  }, [filteredSites]);
+
   const activeFilterCount = [
     searchTerm.trim(),
     selectedAtoll !== 'All',
@@ -166,6 +182,22 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
       </header>
 
       <div className="mx-auto max-w-7xl">
+        <section className="mb-4 rounded-3xl border border-slate-100 bg-white p-3 shadow-sm">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+            {siteStats.map((stat) => (
+              <div key={stat.label} className="rounded-2xl bg-slate-50 px-2 py-2 text-center">
+                <p className="font-display text-lg font-bold text-maldives-deep">{stat.value}</p>
+                <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400 leading-tight">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+          {!hasFilter && (
+            <p className="mt-2 text-center text-[11px] font-semibold text-slate-400">
+              Stats update after you choose an atoll, island, or site name.
+            </p>
+          )}
+        </section>
+
         <section className="mb-4 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
           <div className="relative mb-4">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
