@@ -484,10 +484,16 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isOwner(userId) && isValidId(userId);
-      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming()) && incoming().uid == userId && incoming().role == null;
+      allow create: if request.auth != null &&
+                    request.auth.uid == userId &&
+                    isValidId(userId) &&
+                    isValidUserProfile(incoming()) &&
+                    incoming().uid == userId &&
+                    (incoming().role == null || incoming().role == 'recreational-diver') &&
+                    (incoming().accessStatus == null || incoming().accessStatus == 'active');
       allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming()) && 
                     incoming().uid == userId &&
-                    incoming().diff(existing()).affectedKeys().hasOnly(['name', 'email', 'photoURL', 'homeCountry', 'units', 'certificationProfile', 'updatedAt']);
+                    incoming().diff(existing()).affectedKeys().hasOnly(['name', 'email', 'photoURL', 'homeCountry', 'units', 'certificationProfile', 'updatedAt', 'accessStatus']);
     }
   }
 }

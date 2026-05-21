@@ -127,13 +127,20 @@ export const syncProfile = async (user: User) => {
   if (!db) return;
   const userRef = doc(db, 'users', user.uid);
   try {
+    const existingProfile = await getDocFromServer(userRef).catch(() => null);
+    const isNewProfile = !existingProfile?.exists();
     await setDoc(userRef, {
       uid: user.uid,
-      name: user.displayName,
-      email: user.email,
-      photoURL: user.photoURL,
+      name: user.displayName || user.email?.split('@')[0] || 'New diver',
+      email: user.email || '',
+      photoURL: user.photoURL || '',
       updatedAt: new Date().toISOString(),
-      units: 'metric'
+      units: 'metric',
+      ...(isNewProfile ? {
+        role: 'recreational-diver',
+        accessStatus: 'active',
+        createdAt: new Date().toISOString(),
+      } : {}),
     }, { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
