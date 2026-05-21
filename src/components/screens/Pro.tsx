@@ -1,5 +1,5 @@
 import { User } from 'firebase/auth';
-import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
+import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { ArrowLeft, Crown, FileText } from 'lucide-react';
 import { ReactNode, useEffect, useState } from 'react';
 import { db } from '../../lib/firebase';
@@ -26,13 +26,17 @@ export function Pro({ user, onBack }: ProProps) {
       setSitesLoading(false);
       return;
     }
-    const loadSites = async () => {
-      setSitesLoading(true);
-      const snapshot = await getDocs(query(collection(db, 'diveSites'), orderBy('name'), limit(80)));
-      setSites(snapshot.docs.map((siteDoc) => ({ id: siteDoc.id, ...siteDoc.data() } as DiveSite)));
-      setSitesLoading(false);
-    };
-    loadSites().catch(() => setSitesLoading(false));
+    setSitesLoading(true);
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'diveSites'), orderBy('name'), limit(80)),
+      (snapshot) => {
+        setSites(snapshot.docs.map((siteDoc) => ({ id: siteDoc.id, ...siteDoc.data() } as DiveSite)));
+        setSitesLoading(false);
+      },
+      () => setSitesLoading(false)
+    );
+
+    return () => unsubscribe();
   }, []);
 
   const duplicatePlan = async (plan: DivePlan) => {

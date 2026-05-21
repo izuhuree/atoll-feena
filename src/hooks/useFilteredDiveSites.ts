@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DocumentData,
   QueryDocumentSnapshot,
+  Unsubscribe,
   collection,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   startAfter,
@@ -47,16 +49,7 @@ export function useFilteredDiveSites(filters: DiveSiteFilters) {
   const [error, setError] = useState<string | null>(null);
   const cursorRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
   const rawSitesRef = useRef<DiveSite[]>([]);
-  const cacheRef = useRef(
-    new Map<
-      string,
-      {
-        raw: DiveSite[];
-        cursor: QueryDocumentSnapshot<DocumentData> | null;
-        hasMore: boolean;
-      }
-    >()
-  );
+  const unsubscribeRef = useRef<Unsubscribe | null>(null);
 
   const islandTerm = filters.islandSearch.trim();
   const siteTerm = filters.siteSearch.trim();
@@ -65,16 +58,6 @@ export function useFilteredDiveSites(filters: DiveSiteFilters) {
     filters.atoll !== 'All' ||
     islandTerm.length >= 2 ||
     siteTerm.length >= 2;
-
-  const cacheKey = useMemo(
-    () =>
-      JSON.stringify({
-        atoll: filters.atoll,
-        island: islandTerm.toLowerCase(),
-        site: siteTerm.toLowerCase(),
-      }),
-    [filters.atoll, islandTerm, siteTerm]
-  );
 
   /**
    * Build a Firestore query that is permissive enough to allow accurate
@@ -108,6 +91,8 @@ export function useFilteredDiveSites(filters: DiveSiteFilters) {
   const fetchPage = useCallback(
     async (mode: 'replace' | 'append') => {
       if (!hasFilter || !db) {
+        unsubscribeRef.current?.();
+        unsubscribeRef.current = null;
         setSites([]);
         rawSitesRef.current = [];
         setHasMore(false);
@@ -116,21 +101,47 @@ export function useFilteredDiveSites(filters: DiveSiteFilters) {
         return;
       }
 
-      // Serve from cache (only for replace; append always goes to network).
-      const cached = mode === 'replace' ? cacheRef.current.get(cacheKey) : null;
-      if (cached) {
-        rawSitesRef.current = cached.raw;
-        cursorRef.current = cached.cursor;
-        setHasMore(cached.hasMore);
-        setSites(applyClientFilters(cached.raw));
-        return;
-      }
-
       const q = buildQuery(mode === 'append' ? cursorRef.current : null);
       if (!q) return;
       if (mode === 'append') setLoadingMore(true);
       else setLoading(true);
       setError(null);
+
+      if (mode === 'replace') {
+        unsubscribeRef.current?.();
+        rawSitesRef.current = [];
+        cursorRef.current = null;
+        unsubscribeRef.current = onSnapshot(
+          q,
+          (snapshot) => {
+            const page = snapshot.docs.map(
+              (doc) => ({ ...doc.data(), id: doc.id } as DiveSite)
+            );
+            const pageIds = new Set(page.map((site) => site.id));
+            const appendedRows = rawSitesRef.current.filter((site) => !pageIds.has(site.id));
+            const nextRaw = [...page, ...appendedRows];
+            rawSitesRef.current = nextRaw;
+            cursorRef.current = snapshot.docs[snapshot.docs.length - 1] ?? null;
+            setHasMore(snapshot.docs.length === PAGE_SIZE);
+            setSites(applyClientFilters(nextRaw));
+            setLoading(false);
+            setError(null);
+          },
+          (snapshotError) => {
+            try {
+              handleFirestoreError(snapshotError, OperationType.LIST, 'diveSites');
+            } catch (wrappedError) {
+              setError(
+                wrappedError instanceof Error
+                  ? wrappedError.message
+                  : 'Failed to load dive sites.'
+              );
+            }
+            setLoading(false);
+          }
+        );
+        return;
+      }
 
       try {
         const snapshot = await getDocs(q);
@@ -146,11 +157,6 @@ export function useFilteredDiveSites(filters: DiveSiteFilters) {
         cursorRef.current = nextCursor;
         setHasMore(nextHasMore);
         setSites(applyClientFilters(nextRaw));
-        cacheRef.current.set(cacheKey, {
-          raw: nextRaw,
-          cursor: nextCursor,
-          hasMore: nextHasMore,
-        });
       } catch (fetchError) {
         try {
           handleFirestoreError(
@@ -170,7 +176,7 @@ export function useFilteredDiveSites(filters: DiveSiteFilters) {
         setLoadingMore(false);
       }
     },
-    [applyClientFilters, buildQuery, cacheKey, hasFilter]
+    [applyClientFilters, buildQuery, hasFilter]
   );
 
   // Reload when filter scope (atoll) changes — that's the only filter that
@@ -190,6 +196,34 @@ export function useFilteredDiveSites(filters: DiveSiteFilters) {
     }
     setSites(applyClientFilters(rawSitesRef.current));
   }, [applyClientFilters, hasFilter]);
+
+  useEffect(() => {
+    const hasTextSearch = islandTerm.length >= 2 || siteTerm.length >= 2;
+    if (!hasFilter || !hasTextSearch || loading || loadingMore || !hasMore) return;
+
+    const visibleMatches = applyClientFilters(rawSitesRef.current).length;
+    const loadedPageLimit = rawSitesRef.current.length < PAGE_SIZE * 5;
+    if (visibleMatches < 12 && loadedPageLimit) {
+      fetchPage('append');
+    }
+  }, [
+    applyClientFilters,
+    fetchPage,
+    hasFilter,
+    hasMore,
+    islandTerm.length,
+    loading,
+    loadingMore,
+    siteTerm.length,
+    sites.length,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      unsubscribeRef.current?.();
+      unsubscribeRef.current = null;
+    };
+  }, []);
 
   return {
     sites,

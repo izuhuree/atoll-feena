@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   collection,
-  getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   where,
@@ -62,48 +62,65 @@ export function useHomeDashboard() {
       return;
     }
 
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-
-      const cutoffIso = new Date(Date.now() - 30 * DAY_MS).toISOString();
-      try {
-        const [reportSnap, siteSnap, updatedSiteSnap] = await Promise.all([
-          getDocs(
-            query(
-              collection(db, 'siteConditionReports'),
-              where('reportTime', '>=', cutoffIso),
-              orderBy('reportTime', 'desc'),
-              limit(HOME_REPORT_LIMIT)
-            )
-          ),
-          getDocs(query(collection(db, 'diveSites'), orderBy('name'), limit(HOME_SITE_LIMIT))),
-          getDocs(query(collection(db, 'diveSites'), orderBy('updatedAt', 'desc'), limit(8))),
-        ]);
-
-        setReports(
-          reportSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as SiteConditionReport))
-        );
-        setSites(siteSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as DiveSite)));
-        setRecentlyUpdatedSites(
-          updatedSiteSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as DiveSite))
-        );
-      } catch (loadError) {
-        try {
-          handleFirestoreError(loadError, OperationType.LIST, 'home-dashboard');
-        } catch (wrappedError) {
-          setError(
-            wrappedError instanceof Error
-              ? wrappedError.message
-              : 'Failed to load dashboard data.'
-          );
-        }
-      } finally {
-        setLoading(false);
-      }
+    setLoading(true);
+    setError(null);
+    const cutoffIso = new Date(Date.now() - 30 * DAY_MS).toISOString();
+    const ready = { reports: false, sites: false, updatedSites: false };
+    const markReady = (key: keyof typeof ready) => {
+      ready[key] = true;
+      if (Object.values(ready).every(Boolean)) setLoading(false);
     };
 
-    load();
+    const handleError = (loadError: unknown) => {
+      try {
+        handleFirestoreError(loadError, OperationType.LIST, 'home-dashboard');
+      } catch (wrappedError) {
+        setError(
+          wrappedError instanceof Error
+            ? wrappedError.message
+            : 'Failed to load dashboard data.'
+        );
+      }
+      setLoading(false);
+    };
+
+    const unsubscribeReports = onSnapshot(
+      query(
+        collection(db, 'siteConditionReports'),
+        where('reportTime', '>=', cutoffIso),
+        orderBy('reportTime', 'desc'),
+        limit(HOME_REPORT_LIMIT)
+      ),
+      (snapshot) => {
+        setReports(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as SiteConditionReport)));
+        markReady('reports');
+      },
+      handleError
+    );
+
+    const unsubscribeSites = onSnapshot(
+      query(collection(db, 'diveSites'), orderBy('name'), limit(HOME_SITE_LIMIT)),
+      (snapshot) => {
+        setSites(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as DiveSite)));
+        markReady('sites');
+      },
+      handleError
+    );
+
+    const unsubscribeUpdatedSites = onSnapshot(
+      query(collection(db, 'diveSites'), orderBy('updatedAt', 'desc'), limit(8)),
+      (snapshot) => {
+        setRecentlyUpdatedSites(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as DiveSite)));
+        markReady('updatedSites');
+      },
+      handleError
+    );
+
+    return () => {
+      unsubscribeReports();
+      unsubscribeSites();
+      unsubscribeUpdatedSites();
+    };
   }, []);
 
   const data = useMemo<HomeDashboardData>(() => {

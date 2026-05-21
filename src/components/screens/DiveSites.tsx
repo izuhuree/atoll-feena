@@ -4,7 +4,6 @@ import {
   Search,
   Filter,
   Plus,
-  MapPin,
   RotateCcw,
 } from 'lucide-react';
 import { Atoll, DiveSite } from '../../types';
@@ -13,6 +12,7 @@ import { useDiveSiteSuggestions } from '../../hooks/useDiveSiteSuggestions';
 import { useDiveSiteMutations } from '../../hooks/useDiveSiteMutations';
 import { useFilteredDiveSites } from '../../hooks/useFilteredDiveSites';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import { useDiveSiteStats } from '../../hooks/useDiveSiteStats';
 import { useUserRole } from '../../hooks/useUserRole';
 import { AnimatePresence } from 'motion/react';
 import { DiveSiteForm } from '../dive-sites/DiveSiteForm';
@@ -31,9 +31,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
   const { atolls } = useAtolls();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAtoll, setSelectedAtoll] = useState<Atoll | 'All'>('All');
-  const [islandTerm, setIslandTerm] = useState('');
   const debouncedSearchTerm = useDebouncedValue(searchTerm);
-  const debouncedIslandTerm = useDebouncedValue(islandTerm);
   const {
     sites: filteredSites,
     loading,
@@ -44,7 +42,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
     loadMore,
   } = useFilteredDiveSites({
     atoll: selectedAtoll,
-    islandSearch: debouncedIslandTerm,
+    islandSearch: '',
     siteSearch: debouncedSearchTerm,
   });
   const [isAddingSite, setIsAddingSite] = useState(false);
@@ -72,26 +70,15 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
     }, {});
   }, [filteredSites]);
 
-  const siteStats = useMemo(() => {
-    const atollCount = new Set(filteredSites.map((site) => site.atoll).filter(Boolean)).size;
-    const islandCount = new Set(filteredSites.map((site) => site.islandBase).filter(Boolean)).size;
-    return [
-      { label: 'Loaded', value: filteredSites.length },
-      { label: 'Atolls', value: atollCount },
-      { label: 'Islands', value: islandCount },
-      { label: 'Mapped', value: filteredSites.filter((site) => site.coordinates).length },
-      { label: 'Protected', value: filteredSites.filter((site) => site.isProtected).length },
-      {
-        label: 'Stronger Current',
-        value: filteredSites.filter((site) => site.current === 'strong' || site.current === 'very strong').length,
-      },
-    ];
-  }, [filteredSites]);
+  const { stats: siteStats, loadingCount } = useDiveSiteStats({
+    atoll: selectedAtoll,
+    loadedSites: filteredSites,
+    atollCount: atolls.length,
+  });
 
   const activeFilterCount = [
     searchTerm.trim(),
     selectedAtoll !== 'All',
-    islandTerm.trim(),
   ].filter(Boolean).length;
 
   const handleSave = async () => {
@@ -157,7 +144,6 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
   const resetFilters = () => {
     setSearchTerm('');
     setSelectedAtoll('All');
-    setIslandTerm('');
     setExpandedSiteId(null);
   };
 
@@ -167,7 +153,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
         <div>
           <h1 className="text-3xl font-display font-bold mb-2 text-maldives-deep">Dive Sites</h1>
           <p className="text-slate-500 text-sm">
-            Select an atoll, island, or site name to load matching dive sites
+            Select an atoll, then type or choose a dive site from the database
           </p>
           {saveNotice && (
             <p className="mt-2 text-xs font-bold text-maldives-lagoon">{saveNotice}</p>
@@ -183,33 +169,24 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
 
       <div className="mx-auto max-w-7xl">
         <section className="mb-4 rounded-3xl border border-slate-100 bg-white p-3 shadow-sm">
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
             {siteStats.map((stat) => (
               <div key={stat.label} className="rounded-2xl bg-slate-50 px-2 py-2 text-center">
-                <p className="font-display text-lg font-bold text-maldives-deep">{stat.value}</p>
+                <p className="font-display text-lg font-bold text-maldives-deep">
+                  {loadingCount && stat.label.includes('Sites') ? '...' : stat.value}
+                </p>
                 <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400 leading-tight">{stat.label}</p>
               </div>
             ))}
           </div>
           {!hasFilter && (
             <p className="mt-2 text-center text-[11px] font-semibold text-slate-400">
-              Stats update after you choose an atoll, island, or site name.
+              Counts and loaded results come from the dive-site database.
             </p>
           )}
         </section>
 
         <section className="mb-4 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
-          <div className="relative mb-4">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search dive site name"
-              className="w-full min-h-[52px] pl-12 pr-4 bg-slate-50 border border-transparent rounded-2xl focus:outline-none focus:ring-2 focus:ring-maldives-lagoon/20"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
           <div className="grid gap-3 md:grid-cols-2">
             <SelectField
               id="atoll-filter"
@@ -218,18 +195,20 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
               value={selectedAtoll}
               onChange={(value) => {
                 setSelectedAtoll(value as Atoll | 'All');
+                setSearchTerm('');
                 setExpandedSiteId(null);
               }}
               options={['All', ...atolls.map((atoll) => atoll.name)]}
               allLabel="All Atolls"
             />
-            <TextField
-              id="island-filter"
-              label="Island / Nearby Island"
-              icon={<MapPin className="w-4 h-4 text-maldives-lagoon" />}
-              value={islandTerm}
-              onChange={setIslandTerm}
-              placeholder="Type at least 2 letters"
+            <SiteSearchField
+              id="site-filter"
+              label="Dive Site"
+              icon={<Search className="w-4 h-4 text-maldives-lagoon" />}
+              value={searchTerm}
+              onChange={setSearchTerm}
+              options={filteredSites}
+              placeholder={selectedAtoll === 'All' ? 'Type at least 2 letters' : 'Type or choose a site'}
             />
           </div>
 
@@ -237,7 +216,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
             <p className="text-xs font-semibold text-slate-500">
               {activeFilterCount > 0
                 ? `${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'} applied.`
-                : 'Select an atoll, island, or site name to begin.'}
+                : 'Select an atoll or type a dive site name to begin.'}
             </p>
             <button
               onClick={resetFilters}
@@ -263,7 +242,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
         {!hasFilter && (
           <div className="rounded-3xl border border-slate-100 bg-white p-8 text-center">
             <p className="font-bold text-maldives-deep">Select an atoll or search to begin.</p>
-            <p className="mt-2 text-sm text-slate-500">AtollFeeNa loads only the dive sites relevant to your current filter.</p>
+            <p className="mt-2 text-sm text-slate-500">AtollFeeNa loads matching database records as you filter.</p>
           </div>
         )}
 
@@ -306,7 +285,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
         {hasFilter && !loading && filteredSites.length === 0 && (
           <div className="rounded-3xl border border-slate-100 bg-white p-8 text-center">
             <p className="font-bold text-maldives-deep">No dive sites match these filters.</p>
-            <p className="mt-2 text-sm text-slate-500">Try another atoll, island, or site name.</p>
+            <p className="mt-2 text-sm text-slate-500">Try another atoll or type a different site name.</p>
           </div>
         )}
 
@@ -383,12 +362,13 @@ function SelectField({
   );
 }
 
-function TextField({
+function SiteSearchField({
   id,
   label,
   icon,
   value,
   onChange,
+  options,
   placeholder,
 }: {
   id: string;
@@ -396,8 +376,12 @@ function TextField({
   icon: ReactNode;
   value: string;
   onChange: (value: string) => void;
+  options: DiveSite[];
   placeholder: string;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const suggestions = options.slice(0, 8);
+
   return (
     <div>
       <label htmlFor={id} className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
@@ -410,12 +394,38 @@ function TextField({
           className="w-full min-h-[52px] pl-4 pr-10 bg-slate-50 border border-transparent rounded-2xl focus:outline-none focus:ring-2 focus:ring-maldives-lagoon/20 font-bold text-maldives-deep"
           value={value}
           onChange={(event) => onChange(event.target.value)}
+          onFocus={() => setIsOpen(true)}
+          onBlur={() => window.setTimeout(() => setIsOpen(false), 120)}
           placeholder={placeholder}
         />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
           {icon}
         </span>
+        {isOpen && suggestions.length > 0 && (
+          <div className="absolute left-0 right-0 top-[58px] z-30 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl">
+            {suggestions.map((site) => (
+              <button
+                key={site.id}
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  onChange(site.name);
+                  setIsOpen(false);
+                }}
+                className="flex min-h-[48px] w-full items-center justify-between gap-3 border-b border-slate-50 px-4 text-left last:border-b-0 hover:bg-cyan-50"
+              >
+                <span className="truncate text-sm font-bold text-maldives-deep">{site.name}</span>
+                <span className="shrink-0 text-[10px] font-semibold text-slate-400">
+                  {site.islandBase || site.atoll}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
+      <p className="mt-2 text-[11px] font-semibold text-slate-400">
+        {options.length > 0 ? `${options.length} matching database site${options.length === 1 ? '' : 's'} available.` : 'Matching sites appear as you type.'}
+      </p>
     </div>
   );
 }
