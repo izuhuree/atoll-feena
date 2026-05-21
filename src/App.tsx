@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { auth, syncProfile, isFirebaseConfigured, signInWithGoogle } from './lib/firebase';
-import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { browserLocalPersistence, getRedirectResult, onAuthStateChanged, setPersistence, signOut, User } from 'firebase/auth';
 import { Navigation, Tab } from './components/Navigation';
 import { Home } from './components/screens/Home';
 import { DiveSites } from './components/screens/DiveSites';
@@ -39,6 +39,15 @@ export default function App() {
       setAuthError('Firebase auth is not initialized.');
       return;
     }
+
+    // Mobile redirect flows can be browser-dependent; make redirect completion explicit.
+    setPersistence(auth, browserLocalPersistence).catch((error) => {
+      console.error('Auth persistence setup failed:', error);
+    });
+    getRedirectResult(auth).catch((error) => {
+      console.error('Redirect sign-in resolution failed:', error);
+      setAuthError('Unable to complete mobile sign-in. Please try again.');
+    });
 
     return onAuthStateChanged(auth, async (nextUser) => {
       // Remove previous anonymous sessions to enforce Google sign-in only.

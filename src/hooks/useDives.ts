@@ -62,7 +62,12 @@ export function useDives() {
         createdAt: now,
         updatedAt: now,
       }, { merge: true });
-      await publishSiteConditionReport(diveId, dive, now);
+      try {
+        await publishSiteConditionReport(diveId, dive, now);
+      } catch (reportError) {
+        // The personal dive log save is primary; site-intelligence publishing is best-effort.
+        console.error('siteConditionReports publish failed:', reportError);
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `${path}/${diveId}`);
     }

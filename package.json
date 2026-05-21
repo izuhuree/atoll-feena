@@ -11,6 +11,7 @@
     "check:file-length": "node scripts/enforce-file-length.mjs",
     "lint": "npm run check:file-length && tsc --noEmit",
     "seed:firestore": "tsx scripts/seed-firestore-data.ts",
+    "seed:sample-activity": "tsx scripts/seed-sample-activity.ts",
     "import:scraped-sites": "tsx scripts/import-scraped-dive-sites.ts"
   },
   "dependencies": {

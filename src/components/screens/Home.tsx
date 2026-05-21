@@ -1,20 +1,18 @@
+import { ReactNode } from 'react';
 import { User } from 'firebase/auth';
 import {
-  Waves,
-  Search,
-  TrendingUp,
-  Award,
-  MapPin,
-  Info,
-  HelpCircle,
-  PlusCircle,
-  ShieldAlert,
-  Leaf,
-  Database,
   Anchor,
+  ArrowRight,
+  Compass,
+  Database,
+  Fish,
+  Leaf,
+  MapPin,
+  ShieldAlert,
+  Waves,
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useDives } from '../../hooks/useDives';
+import { useHomeDashboard } from '../../hooks/useHomeDashboard';
 
 interface HomeProps {
   user: User | null;
@@ -24,312 +22,374 @@ interface HomeProps {
   onNavigate?: (tab: string) => void;
 }
 
-/**
- * Home screen. Removed the secondary hamburger menu (was duplicating the
- * bottom tab bar) and replaced the dead-end empty state with a real CTA.
- */
 export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate }: HomeProps) {
-  const { dives } = useDives();
-  const lastDive = dives[0];
   const firstName = user?.displayName?.split(' ')[0];
-  const loggedSpeciesCount = new Set(dives.flatMap((dive) => dive.marineLife || [])).size;
-  const reefRecordCount = dives.reduce(
-    (total, dive) =>
-      total + (dive.reefHealthObservations?.length || 0) + (dive.debrisObservations?.length || 0),
-    0
-  );
+  const dashboard = useHomeDashboard();
 
   return (
-    <div className="px-6 pt-12 pb-24">
-      <header className="mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <motion.img
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+    <div className="px-4 pt-8 pb-24 sm:px-6">
+      <header className="mb-6 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <img
             src="/logo.png"
             alt="AtollFeeNa logo"
-            className="w-11 h-11 rounded-2xl object-cover shadow-sm bg-white border border-slate-100 shrink-0"
-            onError={(e) => {
-              e.currentTarget.src = 'https://placehold.co/100x100/e2e8f0/64748b?text=Logo';
+            className="h-11 w-11 rounded-2xl border border-slate-100 bg-white object-cover shadow-sm"
+            onError={(event) => {
+              event.currentTarget.style.display = 'none';
             }}
           />
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold text-maldives-turquoise uppercase tracking-widest leading-none">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-maldives-turquoise">
               Maruhabaa{firstName ? `, ${firstName}` : ''}
             </p>
-            <h1 className="text-2xl font-display font-bold text-maldives-deep tracking-tight truncate">
-              AtollFeeNa
+            <h1 className="truncate text-2xl font-display font-bold text-maldives-deep">
+              AtollFeeNa Dashboard
             </h1>
           </div>
         </div>
-
-        <button
-          onClick={() => onNavigate?.('user-guide')}
-          aria-label="Open user guide"
-          className="w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center text-maldives-deep active:scale-95 transition-transform"
-        >
-          <HelpCircle className="w-5 h-5" />
-        </button>
       </header>
 
-      {/* Primary action + 2 secondary tiles */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={onLogDive}
-          aria-label="Log today's dive"
-          className="col-span-2 bg-maldives-deep rounded-[2rem] p-7 flex flex-col justify-between shadow-lg shadow-maldives-deep/20 text-white min-h-[188px] relative overflow-hidden group text-left"
-        >
-          <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:rotate-12 transition-transform">
-            <Waves className="w-24 h-24" />
-          </div>
-          <div className="bg-white/20 w-12 h-12 rounded-2xl flex items-center justify-center mb-4 backdrop-blur-sm">
-            <Waves className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest mb-2">
-              Every dive counts
-            </p>
-            <h3 className="font-display font-bold text-2xl leading-tight max-w-[240px]">
-              Log your dive. Improve the next one.
-            </h3>
-            <p className="text-white/80 text-xs mt-3 font-medium max-w-[260px]">
-              Capture conditions, hazards, sightings and reef signals in one useful record.
-            </p>
-          </div>
-        </motion.button>
+      <HeroBanner onPrimaryAction={onLogDive} />
 
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={() => onNavigate?.('sites')}
-          aria-label="Open dive site conditions"
-          className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm flex flex-col justify-between min-h-[150px] text-left"
-        >
-          <div className="w-11 h-11 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-3">
-            <ShieldAlert className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-display font-bold text-lg text-maldives-deep leading-tight">
-              Site Safety
-            </h3>
-            <p className="text-slate-500 text-xs mt-1">Recent conditions &amp; hazards</p>
-          </div>
-        </motion.button>
-
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={onOpenGuide}
-          aria-label="Open field guide"
-          className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm flex flex-col justify-between min-h-[150px] text-left"
-        >
-          <div className="w-11 h-11 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-3">
-            <Leaf className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-display font-bold text-lg text-maldives-deep leading-tight">
-              Reef Record
-            </h3>
-            <p className="text-slate-500 text-xs mt-1">Species, coral &amp; debris</p>
-          </div>
-        </motion.button>
-      </div>
-
-      {/* Quick counters */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-slate-50/70 rounded-3xl p-5 flex items-center gap-4">
-          <div className="w-11 h-11 rounded-2xl bg-white shadow-sm flex items-center justify-center">
-            <Award className="w-5 h-5 text-maldives-turquoise" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-maldives-deep leading-none">{dives.length}</p>
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mt-1">
-              Dives
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={() => onNavigate?.('sites')}
-          className="bg-slate-50/70 rounded-3xl p-5 flex items-center gap-4 active:scale-[0.98] transition-transform text-left"
-          aria-label="Browse dive sites"
-        >
-          <div className="w-11 h-11 rounded-2xl bg-white shadow-sm flex items-center justify-center">
-            <MapPin className="w-5 h-5 text-rose-400" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-maldives-deep leading-none">Map</p>
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mt-1">
-              Sites
-            </p>
-          </div>
-        </button>
-      </div>
-
-      <section className="mb-10 grid grid-cols-3 gap-2">
-        <button
-          onClick={onOpenInsights}
-          className="bg-white border border-slate-100 rounded-2xl p-3 min-h-[88px] text-left active:scale-[0.98] transition-transform"
-        >
-          <TrendingUp className="w-4 h-4 text-maldives-lagoon mb-2" />
-          <p className="text-lg font-bold text-maldives-deep leading-none">{loggedSpeciesCount}</p>
-          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-1">
-            Species
-          </p>
-        </button>
-        <button
-          onClick={onOpenInsights}
-          className="bg-white border border-slate-100 rounded-2xl p-3 min-h-[88px] text-left active:scale-[0.98] transition-transform"
-        >
-          <Database className="w-4 h-4 text-emerald-600 mb-2" />
-          <p className="text-lg font-bold text-maldives-deep leading-none">{reefRecordCount}</p>
-          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-1">
-            Reef Signals
-          </p>
-        </button>
-        <button
-          onClick={() => onNavigate?.('sites')}
-          className="bg-white border border-slate-100 rounded-2xl p-3 min-h-[88px] text-left active:scale-[0.98] transition-transform"
-        >
-          <Anchor className="w-4 h-4 text-amber-600 mb-2" />
-          <p className="text-lg font-bold text-maldives-deep leading-none">
-            {lastDive?.siteConditions?.hazards?.length || 0}
-          </p>
-          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-1">
-            Last Hazards
-          </p>
-        </button>
-      </section>
-
-      {/* Recent Activity */}
-      <section className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-xl text-maldives-deep">Last Dive</h2>
-          {lastDive && (
-            <button
-              onClick={() => onNavigate?.('logbook')}
-              className="text-maldives-lagoon text-sm font-semibold active:opacity-70"
-            >
-              View All
-            </button>
-          )}
-        </div>
-        {lastDive ? (
-          <button
-            onClick={() => onNavigate?.('logbook')}
-            className="w-full bg-white rounded-3xl p-5 border border-slate-100 shadow-sm text-left active:scale-[0.99] transition-transform"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="min-w-0 pr-3">
-                <h3 className="font-bold text-lg text-maldives-deep truncate">
-                  {lastDive.customSiteName || 'Unknown Site'}
-                </h3>
-                <p className="text-slate-500 text-sm flex items-center gap-1">
-                  <MapPin className="w-3 h-3" /> {lastDive.atoll}
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="font-bold text-xl text-maldives-deep">{lastDive.maxDepth}m</p>
-                <p className="text-slate-500 text-xs uppercase tracking-widest font-semibold">
-                  {lastDive.duration} min
-                </p>
-              </div>
-            </div>
-            {lastDive.marineLife.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {lastDive.marineLife.slice(0, 3).map((life) => (
-                  <span
-                    key={life}
-                    className="bg-slate-50 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600"
-                  >
-                    {life}
-                  </span>
-                ))}
-              </div>
-            )}
-            {lastDive.siteConditions && (
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="bg-slate-50 rounded-xl px-3 py-2">
-                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                    Vis
-                  </p>
-                  <p className="text-xs font-bold text-maldives-deep">
-                    {lastDive.siteConditions.visibilityMeters || '--'}m
-                  </p>
-                </div>
-                <div className="bg-slate-50 rounded-xl px-3 py-2">
-                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                    Current
-                  </p>
-                  <p className="text-xs font-bold text-maldives-deep capitalize">
-                    {lastDive.siteConditions.current}
-                  </p>
-                </div>
-                <div className="bg-slate-50 rounded-xl px-3 py-2">
-                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                    Surge
-                  </p>
-                  <p className="text-xs font-bold text-maldives-deep capitalize">
-                    {lastDive.siteConditions.surge || '--'}
-                  </p>
-                </div>
-              </div>
-            )}
-          </button>
+      <section className="mt-6">
+        <SectionHeading
+          eyebrow="Last 30 Days"
+          title="Recent Activity"
+          description="A focused summary of recent dive, safety, and citizen-science contributions."
+        />
+        {dashboard.loading ? (
+          <LoadingPanel label="Loading 30-day dashboard activity..." />
+        ) : dashboard.error ? (
+          <ErrorPanel message="Unable to load dashboard activity right now." />
+        ) : dashboard.metrics.every((metric) => metric.value === 0) ? (
+          <EmptyPanel message="No recent dive activity in the last 30 days." />
         ) : (
-          <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm text-center">
-            <div className="w-16 h-16 bg-maldives-shallow/40 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Waves className="text-maldives-lagoon w-8 h-8" />
-            </div>
-            <h3 className="font-display font-bold text-lg text-maldives-deep mb-1">
-              Your logbook is empty
-            </h3>
-            <p className="text-slate-500 text-sm mb-6 leading-relaxed">
-              Start with one useful record: conditions for divers, observations for the reef.
-            </p>
-            <button
-              onClick={onLogDive}
-              className="inline-flex items-center gap-2 px-5 py-3 bg-maldives-deep text-white rounded-2xl text-sm font-semibold active:scale-[0.98] transition-transform"
-            >
-              <PlusCircle className="w-4 h-4" /> Log my first dive
-            </button>
+          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {dashboard.metrics.map((metric) => (
+              <article
+                key={metric.label}
+                className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  {metric.label}
+                </p>
+                <p className="mt-2 text-2xl font-display font-bold text-maldives-deep">
+                  {metric.value}
+                </p>
+                <p className="mt-1 text-[11px] text-slate-500">{metric.hint}</p>
+              </article>
+            ))}
           </div>
         )}
       </section>
 
-      {/* Site Intelligence Preview */}
-      <button
-        onClick={() => onNavigate?.('sites')}
-        className="block w-full mb-10 overflow-hidden relative rounded-3xl bg-white border border-slate-100 p-6 active:scale-[0.99] transition-transform text-left shadow-sm"
-        aria-label="Explore Maldives dive sites"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon mb-2">
-              Shared diver intelligence
-            </p>
-            <h3 className="text-maldives-deep font-display font-bold text-xl">
-              Plan with better local knowledge
-            </h3>
-            <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-              Browse Maldives sites with depth, current, season and protected-area context.
-            </p>
-          </div>
-          <div className="w-12 h-12 bg-maldives-shallow/40 rounded-2xl flex items-center justify-center shrink-0">
-            <MapPin className="w-6 h-6 text-maldives-lagoon" />
-          </div>
-        </div>
-      </button>
-
-      <footer className="text-center pt-6">
-        <a
-          href="https://izuct.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[10px] font-medium text-slate-400 tracking-widest hover:text-maldives-lagoon transition-colors inline-flex items-center gap-1.5"
+      <section className="mt-8 grid gap-4 lg:grid-cols-2">
+        <DashboardCard
+          icon={ShieldAlert}
+          title="Dive Safety Summary"
+          description="Where recent safety data exists so divers can plan better."
         >
-          <Info className="w-3 h-3" />© {new Date().getFullYear()} izuct.com
-        </a>
-      </footer>
+          {dashboard.loading ? (
+            <LoadingPanel label="Loading safety reports..." compact />
+          ) : dashboard.safety.strongCurrentSites.length === 0 &&
+            dashboard.safety.lowVisibilitySites.length === 0 &&
+            dashboard.safety.recentHazards.length === 0 ? (
+            <EmptyPanel message="No safety reports available yet." compact />
+          ) : (
+            <div className="space-y-4">
+              <InfoList
+                label="Sites with strong current reports"
+                items={dashboard.safety.strongCurrentSites.map(
+                  (item) => `${item.siteName} (${item.count})`
+                )}
+              />
+              <InfoList
+                label="Sites with low visibility reports"
+                items={dashboard.safety.lowVisibilitySites.map(
+                  (item) => `${item.siteName} (${item.count})`
+                )}
+              />
+              <InfoList label="Recently reported hazards" items={dashboard.safety.recentHazards} />
+              <InfoList
+                label="Most recently updated dive sites"
+                items={dashboard.safety.mostRecentlyUpdatedSites}
+              />
+              <InfoList
+                label="Sites with stable recent conditions"
+                items={dashboard.safety.stableSites.map(
+                  (item) => `${item.siteName} (${item.reports})`
+                )}
+              />
+            </div>
+          )}
+        </DashboardCard>
+
+        <DashboardCard
+          icon={Leaf}
+          title="Conservation Summary"
+          description="Recent coral, species, and debris activity from shared reports."
+        >
+          {dashboard.loading ? (
+            <LoadingPanel label="Loading conservation summaries..." compact />
+          ) : dashboard.conservation.coralSignals === 0 &&
+            dashboard.conservation.debrisSignals === 0 &&
+            dashboard.conservation.speciesSightings === 0 ? (
+            <EmptyPanel message="No conservation observations submitted yet." compact />
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <QuickMetric label="Bleaching observations" value={dashboard.conservation.bleachingObservations} />
+                <QuickMetric label="Coral health signals" value={dashboard.conservation.coralSignals} />
+                <QuickMetric label="Debris reports" value={dashboard.conservation.debrisSignals} />
+                <QuickMetric label="Species sightings" value={dashboard.conservation.speciesSightings} />
+              </div>
+              <InfoList
+                label="Sites with most conservation observations"
+                items={dashboard.conservation.topConservationSites.map(
+                  (item) => `${item.siteName} (${item.count})`
+                )}
+              />
+              <InfoList
+                label="Recent notable species activity"
+                items={dashboard.conservation.notableSpeciesActivity.map(
+                  (item) => `${item.siteName} (${item.count})`
+                )}
+              />
+            </div>
+          )}
+        </DashboardCard>
+      </section>
+
+      <section className="mt-8">
+        <DashboardCard
+          icon={Compass}
+          title="Recent Dive Site Insights"
+          description="Recent site activity, data gaps, and profiles that need contribution."
+        >
+          {dashboard.loading ? (
+            <LoadingPanel label="Loading dive site insights..." compact />
+          ) : (
+            <div className="space-y-4">
+              <InfoList
+                label="Recently updated dive sites"
+                items={dashboard.siteInsights.recentlyUpdated.map((site) => site.name)}
+              />
+              <InfoList
+                label="Most reported dive sites"
+                items={dashboard.siteInsights.mostReported.map(
+                  (item) => `${item.siteName} (${item.reports})`
+                )}
+              />
+              <InfoList
+                label="Dive sites needing more data"
+                items={dashboard.siteInsights.needsMoreData.map((site) => site.name)}
+                emptyText="No missing-data sites found in the sampled dashboard set."
+              />
+              <InfoList
+                label="Incomplete site profiles"
+                items={dashboard.siteInsights.incompleteProfiles.map((site) => site.name)}
+                emptyText="No incomplete profiles found in the sampled dashboard set."
+              />
+            </div>
+          )}
+        </DashboardCard>
+      </section>
+
+      <section className="mt-8 grid grid-cols-3 gap-3">
+        <ActionTile
+          icon={Waves}
+          title="Log Dive"
+          subtitle="Add reef and safety data"
+          onClick={onLogDive}
+        />
+        <ActionTile
+          icon={Fish}
+          title="Insights"
+          subtitle="Review your dive trends"
+          onClick={onOpenInsights}
+        />
+        <ActionTile
+          icon={MapPin}
+          title="Sites"
+          subtitle="View site intelligence"
+          onClick={() => onNavigate?.('sites')}
+        />
+      </section>
+
+      <section className="mt-4 grid grid-cols-2 gap-3">
+        <ActionTile
+          icon={Anchor}
+          title="Logbook"
+          subtitle="Your saved dive records"
+          onClick={() => onNavigate?.('logbook')}
+          compact
+        />
+        <ActionTile
+          icon={Database}
+          title="Field Guide"
+          subtitle="Species and IDs"
+          onClick={onOpenGuide}
+          compact
+        />
+      </section>
+    </div>
+  );
+}
+
+function HeroBanner({ onPrimaryAction }: { onPrimaryAction: () => void }) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-[28px] bg-gradient-to-br from-teal-600 via-teal-600 to-cyan-700 px-5 py-8 text-white shadow-lg shadow-teal-900/15 sm:px-8 sm:py-10"
+    >
+      <h2 className="text-3xl font-display font-bold leading-tight sm:text-4xl">
+        Start Contributing Today
+      </h2>
+      <p className="mt-3 max-w-3xl text-sm leading-relaxed text-white/90 sm:text-base">
+        Create your free AtollFeeNa account and turn every dive into valuable reef, safety, and
+        conservation data. Log your dives, improve site knowledge, and help the next diver enter
+        better prepared.
+      </p>
+      <button
+        onClick={onPrimaryAction}
+        className="mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-teal-700 active:scale-[0.98]"
+      >
+        Log Your First Dive
+        <ArrowRight className="h-4 w-4" />
+      </button>
+    </motion.section>
+  );
+}
+
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon">{eyebrow}</p>
+      <h3 className="mt-1 text-2xl font-display font-bold text-maldives-deep">{title}</h3>
+      <p className="mt-1 text-sm text-slate-500">{description}</p>
+    </div>
+  );
+}
+
+function DashboardCard({
+  icon: Icon,
+  title,
+  description,
+  children,
+}: {
+  icon: typeof ShieldAlert;
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <article className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-start gap-3">
+        <div className="rounded-2xl bg-slate-50 p-2.5">
+          <Icon className="h-5 w-5 text-maldives-lagoon" />
+        </div>
+        <div>
+          <h4 className="text-lg font-display font-bold text-maldives-deep">{title}</h4>
+          <p className="text-xs text-slate-500">{description}</p>
+        </div>
+      </div>
+      {children}
+    </article>
+  );
+}
+
+function InfoList({
+  label,
+  items,
+  emptyText = 'No recent items.',
+}: {
+  label: string;
+  items: string[];
+  emptyText?: string;
+}) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+      {items.length === 0 ? (
+        <p className="mt-1 text-xs text-slate-500">{emptyText}</p>
+      ) : (
+        <ul className="mt-2 space-y-1.5">
+          {items.map((item) => (
+            <li key={`${label}-${item}`} className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+              {item}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ActionTile({
+  icon: Icon,
+  title,
+  subtitle,
+  onClick,
+  compact = false,
+}: {
+  icon: typeof Waves;
+  title: string;
+  subtitle: string;
+  onClick?: () => void;
+  compact?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-2xl border border-slate-100 bg-white text-left shadow-sm active:scale-[0.98] ${compact ? 'p-3' : 'p-4'}`}
+    >
+      <Icon className={`text-maldives-lagoon ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
+      <p className={`mt-2 font-display font-bold text-maldives-deep ${compact ? 'text-sm' : 'text-base'}`}>
+        {title}
+      </p>
+      <p className={`text-slate-500 ${compact ? 'text-[11px]' : 'text-xs'}`}>{subtitle}</p>
+    </button>
+  );
+}
+
+function LoadingPanel({ label, compact = false }: { label: string; compact?: boolean }) {
+  return (
+    <div className={`rounded-2xl bg-slate-50 text-slate-500 ${compact ? 'p-3 text-xs' : 'p-4 text-sm'}`}>
+      {label}
+    </div>
+  );
+}
+
+function EmptyPanel({ message, compact = false }: { message: string; compact?: boolean }) {
+  return (
+    <div className={`rounded-2xl border border-slate-100 bg-slate-50 text-slate-500 ${compact ? 'p-3 text-xs' : 'p-4 text-sm'}`}>
+      {message}
+    </div>
+  );
+}
+
+function ErrorPanel({ message }: { message: string }) {
+  return (
+    <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
+      {message}
+    </div>
+  );
+}
+
+function QuickMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl bg-slate-50 px-3 py-2">
+      <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+      <p className="mt-1 text-lg font-display font-bold text-maldives-deep">{value}</p>
     </div>
   );
 }
