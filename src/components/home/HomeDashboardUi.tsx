@@ -52,6 +52,9 @@ export function DashboardCard({
           <Icon className="h-5 w-5 text-maldives-lagoon" />
         </div>
         <div>
+          <span className="mb-1 inline-flex rounded-full bg-cyan-50 px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-cyan-700">
+            Live data
+          </span>
           <h4 className={`${compact ? 'text-base' : 'text-lg'} font-display font-bold text-maldives-deep`}>{title}</h4>
           <p className="text-xs text-slate-500">{description}</p>
         </div>

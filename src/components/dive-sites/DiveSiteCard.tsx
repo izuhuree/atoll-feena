@@ -229,6 +229,12 @@ function SiteIntelligenceSummary({
         <MiniStat label="Current" value={summary.typicalCurrent || '--'} />
         <MiniStat label="Temp" value={summary.averageWaterTemp ? `${summary.averageWaterTemp}°C` : '--'} />
       </div>
+      <div className="mt-3 rounded-2xl bg-white p-3">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon">Before you dive</p>
+        <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-600">
+          {buildSafetySummary(summary)}
+        </p>
+      </div>
       {summary.topHazards.length > 0 && (
         <TagRow label="Hazards" items={summary.topHazards.map((item) => item.label)} tone="rose" />
       )}
@@ -240,6 +246,19 @@ function SiteIntelligenceSummary({
       )}
     </div>
   );
+}
+
+function buildSafetySummary(summary: ReturnType<typeof useSiteIntelligence>['summary']) {
+  if (summary.topHazards.length > 0) {
+    return `Recent reports mention ${summary.topHazards[0].label}. Confirm conditions with a local dive professional.`;
+  }
+  if (summary.typicalCurrent === 'strong' || summary.typicalCurrent === 'very strong') {
+    return 'Recent reports suggest stronger current. Plan entry, exit, buddy position, and abort points carefully.';
+  }
+  if (summary.averageVisibility && summary.averageVisibility <= 10) {
+    return 'Recent visibility is limited. Keep the group close and carry appropriate signalling equipment.';
+  }
+  return 'Recent reports show no major hazard signal, but always follow local briefing, training, and your dive computer.';
 }
 
 function DescriptionBadges({ site }: { site: DiveSite }) {

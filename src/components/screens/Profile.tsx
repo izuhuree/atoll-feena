@@ -23,6 +23,7 @@ import { useUserRole } from '../../hooks/useUserRole';
 import { AiSettingsSection } from '../profile/AiSettingsSection';
 import { UserManagementSection } from '../settings/UserManagementSection';
 import { AppSettingsSection } from '../settings/AppSettingsSection';
+import { ReviewQueuePreview } from '../settings/ReviewQueuePreview';
 
 interface ProfileProps {
   user: User | null;
@@ -432,7 +433,10 @@ export function Profile({ user, onOpenWatch }: ProfileProps) {
         )}
 
         {isAdminSettings && activeSettingsTab === 'app' && (
+          <>
+          <ReviewQueuePreview enabled={canManageAppSettings} />
           <AppSettingsSection enabled={canManageAppSettings} user={user} />
+          </>
         )}
       </div>
 
