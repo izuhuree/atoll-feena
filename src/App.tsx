@@ -4,8 +4,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { auth, syncProfile, isFirebaseConfigured, signInWithGoogle } from './lib/firebase';
-import { browserLocalPersistence, getRedirectResult, onAuthStateChanged, setPersistence, signOut, User } from 'firebase/auth';
+import { auth, ensureAuthPersistence, syncProfile, isFirebaseConfigured, signInWithGoogle } from './lib/firebase';
+import { getRedirectResult, onAuthStateChanged, User } from 'firebase/auth';
 import { Navigation, Tab } from './components/Navigation';
 import { Home } from './components/screens/Home';
 import { DiveSites } from './components/screens/DiveSites';
@@ -40,23 +40,28 @@ export default function App() {
       return;
     }
 
-    // Mobile redirect flows can be browser-dependent; make redirect completion explicit.
-    setPersistence(auth, browserLocalPersistence).catch((error) => {
+    ensureAuthPersistence().catch((error) => {
       console.error('Auth persistence setup failed:', error);
     });
     getRedirectResult(auth).catch((error) => {
+      const errorCode = String((error as { code?: string })?.code || '');
+      const errorMessage = String((error as { message?: string })?.message || '');
+      const isNoPendingRedirect =
+        errorCode === 'auth/no-auth-event' ||
+        errorCode === 'auth/missing-initial-state' ||
+        errorMessage.toLowerCase().includes('missing initial state');
+
+      if (isNoPendingRedirect) {
+        return;
+      }
+
       console.error('Redirect sign-in resolution failed:', error);
-      setAuthError('Unable to complete mobile sign-in. Please try again.');
+      setAuthError('Unable to complete sign-in. Please try again.');
     });
 
     return onAuthStateChanged(auth, async (nextUser) => {
-      // Remove previous anonymous sessions to enforce Google sign-in only.
+      // Treat anonymous sessions as signed out without forcing sign-out churn on mobile.
       if (nextUser?.isAnonymous) {
-        try {
-          await signOut(auth);
-        } catch (error) {
-          console.error('Failed to clear anonymous session:', error);
-        }
         setUser(null);
         setIsAuthLoading(false);
         return;

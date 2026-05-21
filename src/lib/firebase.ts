@@ -1,5 +1,16 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, User, signInWithPopup, signInWithRedirect } from 'firebase/auth';
+import {
+  AuthError,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  getAuth,
+  GoogleAuthProvider,
+  inMemoryPersistence,
+  setPersistence,
+  User,
+  signInWithPopup,
+  signInWithRedirect
+} from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer, setDoc } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
@@ -45,18 +56,57 @@ const isMobileBrowser = () => {
   return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
 };
 
+const isInAppBrowser = () => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /(FBAN|FBAV|Instagram|Line|Twitter|Snapchat|Messenger|WhatsApp|wv)/i.test(ua);
+};
+
+let persistenceReadyPromise: Promise<void> | null = null;
+
+export const ensureAuthPersistence = async () => {
+  if (!auth) return;
+  if (!persistenceReadyPromise) {
+    persistenceReadyPromise = (async () => {
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+        return;
+      } catch {
+        // Fallback for constrained browsers.
+      }
+      try {
+        await setPersistence(auth, browserSessionPersistence);
+        return;
+      } catch {
+        // Fallback for heavily restricted environments.
+      }
+      await setPersistence(auth, inMemoryPersistence);
+    })();
+  }
+  await persistenceReadyPromise;
+};
+
 export const signInWithGoogle = async () => {
   if (!auth) throw new Error('Firebase auth is not configured.');
+  await ensureAuthPersistence();
+
   if (isMobileBrowser()) {
+    if (isInAppBrowser()) {
+      throw new Error('Google sign-in is blocked in in-app browsers. Please open AtollFeeNa in Safari or Chrome and try again.');
+    }
     await signInWithRedirect(auth, googleProvider);
     return;
   }
+
   try {
     await signInWithPopup(auth, googleProvider);
   } catch (error: unknown) {
     if (error instanceof Error && 'code' in error) {
-      const authError = error as Error & { code?: string };
+      const authError = error as AuthError;
       if (authError.code === 'auth/popup-blocked' || authError.code === 'auth/cancelled-popup-request') {
+        if (isMobileBrowser()) {
+          throw new Error('Sign-in popup was blocked on mobile. Please open AtollFeeNa in your phone browser and allow popups.');
+        }
         await signInWithRedirect(auth, googleProvider);
         return;
       }
