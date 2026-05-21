@@ -65,8 +65,10 @@ export function AiDescriptionPanel({ site, canGenerate, onApply }: AiDescription
             id="ai-description-draft"
             value={draftText}
             onChange={(event) => setDraftText(event.target.value)}
+            maxLength={1000}
             className="min-h-[132px] w-full rounded-2xl border-none bg-slate-50 p-4 text-sm font-medium leading-relaxed text-slate-700 focus:ring-2 focus:ring-maldives-lagoon/20"
           />
+          <p className="text-xs font-medium text-slate-500">{draftText.length}/1000 characters</p>
           <div>
             <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
               Sources to review

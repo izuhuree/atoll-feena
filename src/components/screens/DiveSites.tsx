@@ -47,6 +47,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
   });
   const [isAddingSite, setIsAddingSite] = useState(false);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
   const [newSite, setNewSite] = useState<Partial<DiveSite>>({
     atoll: 'North Malé',
@@ -83,6 +84,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
 
   const handleSave = async () => {
     if (!newSite.name) return;
+    setSaveError(null);
     const siteToSave: DiveSite = {
       id: editingSiteId || `custom-${Date.now()}`,
       name: newSite.name,
@@ -101,20 +103,29 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
       regulatedAccess: newSite.regulatedAccess,
       ...newSite
     } as DiveSite;
-    if (canPublishDiveSiteInfo) {
-      await saveSite(siteToSave);
-      setSaveNotice('Dive site updated.');
-    } else {
-      await submitSuggestion(
-        {
-          id: siteToSave.id,
-          name: siteToSave.name,
-          atoll: siteToSave.atoll,
-          description: siteToSave.description,
-        },
-        editingSiteId || undefined
-      );
-      setSaveNotice('Suggestion submitted for review.');
+    try {
+      if (canPublishDiveSiteInfo) {
+        await saveSite(siteToSave);
+        setSaveNotice('Dive site updated.');
+      } else {
+        await submitSuggestion(
+          {
+            id: siteToSave.id,
+            name: siteToSave.name,
+            atoll: siteToSave.atoll,
+            description: siteToSave.description,
+            descriptionSourceRefs: siteToSave.descriptionSourceRefs,
+            descriptionGeneratedAt: siteToSave.descriptionGeneratedAt,
+            descriptionGeneratedBy: siteToSave.descriptionGeneratedBy,
+          },
+          editingSiteId || undefined
+        );
+        setSaveNotice('Suggestion submitted for review.');
+      }
+    } catch (error) {
+      console.error(error);
+      setSaveError('Unable to save the description. Check your role and try again.');
+      return;
     }
     setIsAddingSite(false);
     setEditingSiteId(null);
@@ -157,6 +168,9 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
           </p>
           {saveNotice && (
             <p className="mt-2 text-xs font-bold text-maldives-lagoon">{saveNotice}</p>
+          )}
+          {saveError && (
+            <p className="mt-2 text-xs font-bold text-rose-600">{saveError}</p>
           )}
         </div>
         <button 

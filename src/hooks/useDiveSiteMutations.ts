@@ -1,5 +1,6 @@
 import { deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { stripUndefinedDeep } from '../lib/firestoreData';
 import { DiveSite } from '../types';
 
 export function useDiveSiteMutations() {
@@ -7,11 +8,11 @@ export function useDiveSiteMutations() {
     if (!db) return;
     const siteId = site.id || `site-${Date.now()}`;
     try {
-      await setDoc(doc(db, 'diveSites', siteId), {
+      await setDoc(doc(db, 'diveSites', siteId), stripUndefinedDeep({
         ...site,
         id: siteId,
         updatedAt: new Date().toISOString(),
-      }, { merge: true });
+      }), { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `diveSites/${siteId}`);
     }

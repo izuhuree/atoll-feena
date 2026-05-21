@@ -1,5 +1,6 @@
 import { addDoc, collection } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { stripUndefinedDeep } from '../lib/firestoreData';
 import { DiveSite, DiveSiteEditSuggestion } from '../types';
 
 export function useDiveSiteSuggestions() {
@@ -27,7 +28,7 @@ export function useDiveSiteSuggestions() {
     };
 
     try {
-      await addDoc(collection(db, 'diveSiteEditSuggestions'), payload);
+      await addDoc(collection(db, 'diveSiteEditSuggestions'), stripUndefinedDeep(payload));
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'diveSiteEditSuggestions');
     }

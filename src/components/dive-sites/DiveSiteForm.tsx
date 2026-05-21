@@ -282,9 +282,13 @@ export function DiveSiteForm({
                 id="site-description"
                 placeholder="Mention currents, unique features..."
                 className="w-full p-5 bg-slate-50 border-none rounded-2xl min-h-[100px] focus:ring-2 focus:ring-maldives-lagoon/20 font-medium"
+                maxLength={1000}
                 value={newSite.description || ''}
                 onChange={(e) => setDescription(e.target.value)}
               />
+              <p className="mt-2 text-xs font-medium text-slate-500">
+                {(newSite.description || '').length}/1000 characters. Keep it short, factual, and useful for divers.
+              </p>
               <AiDescriptionPanel
                 site={newSite}
                 canGenerate
