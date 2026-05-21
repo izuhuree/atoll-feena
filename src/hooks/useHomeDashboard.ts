@@ -8,7 +8,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { DiveSite, SiteConditionReport } from '../types';
+import { Atoll, DiveSite, SiteConditionReport } from '../types';
 
 const HOME_REPORT_LIMIT = 400;
 const HOME_SITE_LIMIT = 160;
@@ -17,6 +17,14 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 interface HomeDashboardData {
   loading: boolean;
   error: string | null;
+  activityMapPoints: Array<{
+    id: string;
+    name: string;
+    atoll: string;
+    lat: number;
+    lng: number;
+    reports: number;
+  }>;
   metrics: Array<{ label: string; value: number; hint: string }>;
   safety: {
     strongCurrentSites: Array<{ siteName: string; count: number }>;
@@ -109,6 +117,7 @@ export function useHomeDashboard() {
       if (report.siteId) siteNameById.set(report.siteId, report.siteName);
     });
     sites.forEach((site) => siteNameById.set(site.id, site.name));
+    const siteById = new Map(sites.map((site) => [site.id, site]));
 
     const activeSiteIds = new Set(reports.map((report) => report.siteId));
     const atolls = new Set(reports.map((report) => report.atoll));
@@ -187,6 +196,29 @@ export function useHomeDashboard() {
     return {
       loading,
       error,
+      activityMapPoints: Object.entries(siteReportCounts)
+        .map(([siteId, reports]) => {
+          const site = siteById.get(siteId);
+          if (!site?.coordinates) return null;
+          return {
+            id: site.id,
+            name: site.name,
+            atoll: site.atoll,
+            lat: site.coordinates.lat,
+            lng: site.coordinates.lng,
+            reports,
+          };
+        })
+        .filter((point): point is {
+          id: string;
+          name: string;
+          atoll: Atoll;
+          lat: number;
+          lng: number;
+          reports: number;
+        } => Boolean(point))
+        .sort((a, b) => b.reports - a.reports)
+        .slice(0, 18),
       metrics: [
         {
           label: 'Dive Logs (30d)',

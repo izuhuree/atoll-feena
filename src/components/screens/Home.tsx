@@ -1,18 +1,29 @@
 import { ReactNode } from 'react';
 import { User } from 'firebase/auth';
 import {
+  Activity,
   Anchor,
+  AlertTriangle,
   ArrowRight,
   Compass,
+  Droplets,
   Database,
   Fish,
   Leaf,
+  LifeBuoy,
+  Map,
+  MapPinned,
   MapPin,
+  Radar,
   ShieldAlert,
+  ShipWheel,
+  Thermometer,
+  Trash2,
   Waves,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useHomeDashboard } from '../../hooks/useHomeDashboard';
+import { MaldivesActivityMap } from '../home/MaldivesActivityMap';
 
 interface HomeProps {
   user: User | null;
@@ -43,13 +54,13 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
               Maruhabaa{firstName ? `, ${firstName}` : ''}
             </p>
             <h1 className="truncate text-2xl font-display font-bold text-maldives-deep">
-              AtollFeeNa Dashboard
+              AtollFeeNa
             </h1>
           </div>
         </div>
       </header>
 
-      <HeroBanner onPrimaryAction={onLogDive} />
+      <HeroBanner onPrimaryAction={onLogDive} activityPoints={dashboard.activityMapPoints} />
 
       <section className="mt-6">
         <SectionHeading
@@ -70,9 +81,10 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
                 key={metric.label}
                 className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
               >
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  {metric.label}
-                </p>
+                <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-maldives-shallow/30 text-maldives-lagoon">
+                  <MetricIcon label={metric.label} />
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{metric.label}</p>
                 <p className="mt-2 text-2xl font-display font-bold text-maldives-deep">
                   {metric.value}
                 </p>
@@ -85,7 +97,7 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
 
       <section className="mt-8 grid gap-4 lg:grid-cols-2">
         <DashboardCard
-          icon={ShieldAlert}
+          icon={LifeBuoy}
           title="Dive Safety Summary"
           description="Where recent safety data exists so divers can plan better."
         >
@@ -97,6 +109,28 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
             <EmptyPanel message="No safety reports available yet." compact />
           ) : (
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <QuickMetric
+                  icon={Waves}
+                  label="Strong current sites"
+                  value={dashboard.safety.strongCurrentSites.length}
+                />
+                <QuickMetric
+                  icon={Droplets}
+                  label="Low visibility sites"
+                  value={dashboard.safety.lowVisibilitySites.length}
+                />
+                <QuickMetric
+                  icon={AlertTriangle}
+                  label="Hazard types"
+                  value={dashboard.safety.recentHazards.length}
+                />
+                <QuickMetric
+                  icon={MapPinned}
+                  label="Recently updated"
+                  value={dashboard.safety.mostRecentlyUpdatedSites.length}
+                />
+              </div>
               <InfoList
                 label="Sites with strong current reports"
                 items={dashboard.safety.strongCurrentSites.map(
@@ -125,9 +159,10 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
         </DashboardCard>
 
         <DashboardCard
-          icon={Leaf}
+          icon={Fish}
           title="Conservation Summary"
           description="Recent coral, species, and debris activity from shared reports."
+          compact
         >
           {dashboard.loading ? (
             <LoadingPanel label="Loading conservation summaries..." compact />
@@ -137,24 +172,30 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
             <EmptyPanel message="No conservation observations submitted yet." compact />
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <QuickMetric label="Bleaching observations" value={dashboard.conservation.bleachingObservations} />
-                <QuickMetric label="Coral health signals" value={dashboard.conservation.coralSignals} />
-                <QuickMetric label="Debris reports" value={dashboard.conservation.debrisSignals} />
-                <QuickMetric label="Species sightings" value={dashboard.conservation.speciesSightings} />
+              <div className="grid grid-cols-4 gap-2">
+                <QuickMetric icon={Thermometer} label="Bleaching observations" value={dashboard.conservation.bleachingObservations} />
+                <QuickMetric icon={Leaf} label="Coral health signals" value={dashboard.conservation.coralSignals} />
+                <QuickMetric icon={Trash2} label="Debris reports" value={dashboard.conservation.debrisSignals} />
+                <QuickMetric icon={Fish} label="Species sightings" value={dashboard.conservation.speciesSightings} />
               </div>
-              <InfoList
-                label="Sites with most conservation observations"
-                items={dashboard.conservation.topConservationSites.map(
-                  (item) => `${item.siteName} (${item.count})`
-                )}
-              />
-              <InfoList
-                label="Recent notable species activity"
-                items={dashboard.conservation.notableSpeciesActivity.map(
-                  (item) => `${item.siteName} (${item.count})`
-                )}
-              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <InfoList
+                  label="Top conservation sites"
+                  items={dashboard.conservation.topConservationSites.map(
+                    (item) => `${item.siteName} (${item.count})`
+                  )}
+                  maxItems={3}
+                  compact
+                />
+                <InfoList
+                  label="Recent species activity"
+                  items={dashboard.conservation.notableSpeciesActivity.map(
+                    (item) => `${item.siteName} (${item.count})`
+                  )}
+                  maxItems={3}
+                  compact
+                />
+              </div>
             </div>
           )}
         </DashboardCard>
@@ -162,33 +203,42 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
 
       <section className="mt-8">
         <DashboardCard
-          icon={Compass}
-          title="Recent Dive Site Insights"
+          icon={Map}
+          title="Dive Site Insights"
           description="Recent site activity, data gaps, and profiles that need contribution."
+          compact
         >
           {dashboard.loading ? (
             <LoadingPanel label="Loading dive site insights..." compact />
           ) : (
-            <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
               <InfoList
-                label="Recently updated dive sites"
+                label="Recently updated"
                 items={dashboard.siteInsights.recentlyUpdated.map((site) => site.name)}
+                maxItems={3}
+                compact
               />
               <InfoList
-                label="Most reported dive sites"
+                label="Most reported"
                 items={dashboard.siteInsights.mostReported.map(
                   (item) => `${item.siteName} (${item.reports})`
                 )}
+                maxItems={3}
+                compact
               />
               <InfoList
-                label="Dive sites needing more data"
+                label="Needs more data"
                 items={dashboard.siteInsights.needsMoreData.map((site) => site.name)}
                 emptyText="No missing-data sites found in the sampled dashboard set."
+                maxItems={3}
+                compact
               />
               <InfoList
-                label="Incomplete site profiles"
+                label="Incomplete profiles"
                 items={dashboard.siteInsights.incompleteProfiles.map((site) => site.name)}
                 emptyText="No incomplete profiles found in the sampled dashboard set."
+                maxItems={3}
+                compact
               />
             </div>
           )}
@@ -197,19 +247,19 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
 
       <section className="mt-8 grid grid-cols-3 gap-3">
         <ActionTile
-          icon={Waves}
+          icon={ShipWheel}
           title="Log Dive"
           subtitle="Add reef and safety data"
           onClick={onLogDive}
         />
         <ActionTile
-          icon={Fish}
+          icon={Radar}
           title="Insights"
           subtitle="Review your dive trends"
           onClick={onOpenInsights}
         />
         <ActionTile
-          icon={MapPin}
+          icon={MapPinned}
           title="Sites"
           subtitle="View site intelligence"
           onClick={() => onNavigate?.('sites')}
@@ -225,7 +275,7 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
           compact
         />
         <ActionTile
-          icon={Database}
+          icon={Fish}
           title="Field Guide"
           subtitle="Species and IDs"
           onClick={onOpenGuide}
@@ -236,13 +286,21 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
   );
 }
 
-function HeroBanner({ onPrimaryAction }: { onPrimaryAction: () => void }) {
+function HeroBanner({
+  onPrimaryAction,
+  activityPoints,
+}: {
+  onPrimaryAction: () => void;
+  activityPoints: Array<{ id: string; name: string; atoll: string; lat: number; lng: number; reports: number }>;
+}) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-[28px] bg-gradient-to-br from-teal-600 via-teal-600 to-cyan-700 px-5 py-8 text-white shadow-lg shadow-teal-900/15 sm:px-8 sm:py-10"
+      className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-teal-700 via-teal-600 to-cyan-700 px-5 py-8 text-white shadow-lg shadow-teal-900/15 sm:px-8 sm:py-10"
     >
+      <MaldivesActivityMap points={activityPoints} />
+      <div className="relative z-10 max-w-3xl">
       <h2 className="text-3xl font-display font-bold leading-tight sm:text-4xl">
         Start Contributing Today
       </h2>
@@ -258,6 +316,7 @@ function HeroBanner({ onPrimaryAction }: { onPrimaryAction: () => void }) {
         Log Your First Dive
         <ArrowRight className="h-4 w-4" />
       </button>
+      </div>
     </motion.section>
   );
 }
@@ -285,20 +344,22 @@ function DashboardCard({
   title,
   description,
   children,
+  compact = false,
 }: {
   icon: typeof ShieldAlert;
   title: string;
   description: string;
   children: ReactNode;
+  compact?: boolean;
 }) {
   return (
-    <article className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-start gap-3">
-        <div className="rounded-2xl bg-slate-50 p-2.5">
+    <article className={`rounded-3xl border border-slate-100 bg-white shadow-sm ${compact ? 'p-4' : 'p-5'}`}>
+      <div className={`flex items-start gap-3 ${compact ? 'mb-3' : 'mb-4'}`}>
+        <div className="rounded-2xl bg-slate-50 p-2.5 shrink-0">
           <Icon className="h-5 w-5 text-maldives-lagoon" />
         </div>
         <div>
-          <h4 className="text-lg font-display font-bold text-maldives-deep">{title}</h4>
+          <h4 className={`${compact ? 'text-base' : 'text-lg'} font-display font-bold text-maldives-deep`}>{title}</h4>
           <p className="text-xs text-slate-500">{description}</p>
         </div>
       </div>
@@ -311,20 +372,26 @@ function InfoList({
   label,
   items,
   emptyText = 'No recent items.',
+  maxItems,
+  compact = false,
 }: {
   label: string;
   items: string[];
   emptyText?: string;
+  maxItems?: number;
+  compact?: boolean;
 }) {
+  const visibleItems = maxItems ? items.slice(0, maxItems) : items;
+
   return (
     <div>
       <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
-      {items.length === 0 ? (
+      {visibleItems.length === 0 ? (
         <p className="mt-1 text-xs text-slate-500">{emptyText}</p>
       ) : (
-        <ul className="mt-2 space-y-1.5">
-          {items.map((item) => (
-            <li key={`${label}-${item}`} className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+        <ul className={`mt-2 ${compact ? 'space-y-1' : 'space-y-1.5'}`}>
+          {visibleItems.map((item) => (
+            <li key={`${label}-${item}`} className={`rounded-xl bg-slate-50 px-3 text-xs font-semibold text-slate-700 ${compact ? 'py-1.5' : 'py-2'}`}>
               {item}
             </li>
           ))}
@@ -385,11 +452,26 @@ function ErrorPanel({ message }: { message: string }) {
   );
 }
 
-function QuickMetric({ label, value }: { label: string; value: number }) {
+function QuickMetric({ icon: Icon, label, value }: { icon: typeof Waves; label: string; value: number }) {
   return (
-    <div className="rounded-xl bg-slate-50 px-3 py-2">
-      <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+    <div className="rounded-xl bg-slate-50 px-2.5 py-2">
+      <Icon className="mb-1.5 h-4 w-4 text-maldives-lagoon" />
+      <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400 leading-tight">{label}</p>
       <p className="mt-1 text-lg font-display font-bold text-maldives-deep">{value}</p>
     </div>
   );
+}
+
+function MetricIcon({ label }: { label: string }) {
+  const Icon =
+    label.includes('Dive Logs') ? ShipWheel :
+    label.includes('Active Dive Sites') ? MapPinned :
+    label.includes('Atolls') ? Map :
+    label.includes('Species') ? Fish :
+    label.includes('Coral') ? Leaf :
+    label.includes('Debris') ? Trash2 :
+    label.includes('Safety') ? LifeBuoy :
+    AlertTriangle;
+
+  return <Icon className="h-4 w-4" />;
 }
