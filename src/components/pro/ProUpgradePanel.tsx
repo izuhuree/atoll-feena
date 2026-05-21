@@ -3,10 +3,19 @@ import { PaymentTransaction } from '../../types';
 
 interface ProUpgradePanelProps {
   isCreatingPayment: boolean;
-  onUpgrade: (tier: PaymentTransaction['tier']) => void;
+  onUpgrade: (tier: PaymentTransaction['tier']) => Promise<void>;
+  error?: string | null;
+  paymentMessage?: string | null;
+  paymentUrlConfigured: boolean;
 }
 
-export function ProUpgradePanel({ isCreatingPayment, onUpgrade }: ProUpgradePanelProps) {
+export function ProUpgradePanel({
+  isCreatingPayment,
+  onUpgrade,
+  error,
+  paymentMessage,
+  paymentUrlConfigured,
+}: ProUpgradePanelProps) {
   return (
     <div className="space-y-4">
       <section className="rounded-3xl bg-maldives-deep p-5 text-white shadow-lg shadow-slate-900/10">
@@ -41,6 +50,7 @@ export function ProUpgradePanel({ isCreatingPayment, onUpgrade }: ProUpgradePane
           price="MVR 150"
           points={['Personal dive plans', 'Recent site conditions', 'Buddy and equipment checks', 'Duplicate previous plans']}
           disabled={isCreatingPayment}
+          paymentUrlConfigured={paymentUrlConfigured}
           onClick={() => onUpgrade('individual-diver-pro')}
         />
         <UpgradeCard
@@ -49,9 +59,22 @@ export function ProUpgradePanel({ isCreatingPayment, onUpgrade }: ProUpgradePane
           price="MVR 750"
           points={['Group dive planning', 'Staff, guide, and boat notes', 'Daily operation history', 'Briefing summaries']}
           disabled={isCreatingPayment}
+          paymentUrlConfigured={paymentUrlConfigured}
           onClick={() => onUpgrade('dive-centre-pro')}
         />
       </div>
+
+      {paymentMessage ? (
+        <div className="rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-xs font-semibold leading-relaxed text-emerald-800">
+          {paymentMessage}
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="rounded-3xl border border-red-100 bg-red-50 p-4 text-xs font-semibold leading-relaxed text-red-700">
+          {error}
+        </div>
+      ) : null}
 
       <div className="rounded-3xl border border-amber-100 bg-amber-50 p-4 text-xs leading-relaxed text-amber-800">
         <div className="mb-2 flex items-center gap-2 font-bold">
@@ -61,6 +84,7 @@ export function ProUpgradePanel({ isCreatingPayment, onUpgrade }: ProUpgradePane
         Bank of Maldives payment credentials are not stored in the browser. A pending payment record
         is created first; Pro access is granted only after verified payment is recorded by an
         authorised admin or server-side process.
+        {!paymentUrlConfigured ? ' Add VITE_BML_PAYMENT_REQUEST_URL to enable direct BML checkout from this button.' : ''}
       </div>
     </div>
   );
@@ -82,6 +106,7 @@ function UpgradeCard({
   price,
   points,
   disabled,
+  paymentUrlConfigured,
   onClick,
 }: {
   icon: typeof UserRound;
@@ -89,7 +114,8 @@ function UpgradeCard({
   price: string;
   points: string[];
   disabled: boolean;
-  onClick: () => void;
+  paymentUrlConfigured: boolean;
+  onClick: () => Promise<void>;
 }) {
   return (
     <article className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
@@ -116,7 +142,7 @@ function UpgradeCard({
         className="mt-5 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-maldives-deep px-4 text-sm font-bold text-white disabled:opacity-60"
       >
         <CreditCard className="h-4 w-4" />
-        {disabled ? 'Creating request...' : 'Upgrade with BML'}
+        {disabled ? 'Creating request...' : paymentUrlConfigured ? 'Upgrade with BML' : 'Create BML Request'}
       </button>
     </article>
   );

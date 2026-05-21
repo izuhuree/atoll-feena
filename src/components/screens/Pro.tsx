@@ -62,7 +62,13 @@ export function Pro({ user, onBack }: ProProps) {
       {pro.loading ? (
         <Panel>Checking Pro access...</Panel>
       ) : !pro.hasAnyPro ? (
-        <ProUpgradePanel isCreatingPayment={pro.isCreatingPayment} onUpgrade={pro.createPaymentRequest} />
+        <ProUpgradePanel
+          error={pro.error}
+          isCreatingPayment={pro.isCreatingPayment}
+          paymentMessage={pro.paymentMessage}
+          paymentUrlConfigured={pro.paymentUrlConfigured}
+          onUpgrade={pro.createPaymentRequest}
+        />
       ) : (
         <div className="space-y-5">
           <section className="rounded-3xl border border-cyan-100 bg-white p-4 shadow-sm">
