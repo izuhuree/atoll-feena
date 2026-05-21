@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Atoll, DiveSite } from '../../types';
 import { cn } from '../../lib/utils';
 import { useAtolls } from '../../hooks/useAtolls';
+import { AiDescriptionPanel } from './AiDescriptionPanel';
 
 interface DiveSiteFormProps {
   newSite: Partial<DiveSite>;
@@ -36,6 +37,21 @@ export function DiveSiteForm({
     setNewSite({
       ...newSite,
       description,
+      sketchInstructions: hasCustomSketchInstructions ? newSite.sketchInstructions : description,
+    });
+  };
+
+  const applyAiDescription = (
+    description: string,
+    descriptionSourceRefs: NonNullable<DiveSite['descriptionSourceRefs']>
+  ) => {
+    const generatedAt = new Date().toISOString();
+    const hasCustomSketchInstructions = !!newSite.sketchInstructions?.trim();
+    setNewSite({
+      ...newSite,
+      description,
+      descriptionSourceRefs,
+      descriptionGeneratedAt: generatedAt,
       sketchInstructions: hasCustomSketchInstructions ? newSite.sketchInstructions : description,
     });
   };
@@ -247,18 +263,30 @@ export function DiveSiteForm({
             </div>
 
             <div>
-              <label
-                htmlFor="site-description"
-                className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2"
-              >
-                Description
-              </label>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <label
+                  htmlFor="site-description"
+                  className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block"
+                >
+                  Description
+                </label>
+                {newSite.descriptionSourceRefs?.length ? (
+                  <span className="rounded-full bg-cyan-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-cyan-700">
+                    {newSite.descriptionSourceRefs.length} sources
+                  </span>
+                ) : null}
+              </div>
               <textarea
                 id="site-description"
                 placeholder="Mention currents, unique features..."
                 className="w-full p-5 bg-slate-50 border-none rounded-2xl min-h-[100px] focus:ring-2 focus:ring-maldives-lagoon/20 font-medium"
                 value={newSite.description || ''}
                 onChange={(e) => setDescription(e.target.value)}
+              />
+              <AiDescriptionPanel
+                site={newSite}
+                canGenerate={canEditStructured}
+                onApply={applyAiDescription}
               />
             </div>
 

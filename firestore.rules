@@ -87,6 +87,9 @@ service cloud.firestore {
              (data.sourceAtoll == null || data.sourceAtoll is string && data.sourceAtoll.size() <= 100) &&
              (data.dataQuality == null || data.dataQuality in ['name-atoll-only', 'feature-tagged', 'detailed']) &&
              (data.importedAt == null || data.importedAt is string) &&
+             (data.descriptionSourceRefs == null || data.descriptionSourceRefs is list && data.descriptionSourceRefs.size() <= 10) &&
+             (data.descriptionGeneratedAt == null || data.descriptionGeneratedAt is string) &&
+             (data.descriptionGeneratedBy == null || data.descriptionGeneratedBy is string) &&
              (data.sketchInstructions == null || data.sketchInstructions is string && data.sketchInstructions.size() <= 2000) &&
              (data.sketchInstructionsUpdatedAt == null || data.sketchInstructionsUpdatedAt is string) &&
              (data.aiSketchUrl == null || data.aiSketchUrl is string && data.aiSketchUrl.size() <= 1024) &&

@@ -76,12 +76,21 @@ export interface DiveSite {
   sourceAtoll?: string;
   dataQuality?: 'name-atoll-only' | 'feature-tagged' | 'detailed';
   importedAt?: string;
+  descriptionSourceRefs?: SourceReference[];
+  descriptionGeneratedAt?: string;
+  descriptionGeneratedBy?: string;
   sketchInstructions?: string;
   sketchInstructionsUpdatedAt?: string;
   /** Cached AI-generated top-down sketch URL (Firebase Storage). */
   aiSketchUrl?: string;
   aiSketchPrompt?: string;
   aiSketchGeneratedAt?: string;
+}
+
+export interface SourceReference {
+  title: string;
+  url: string;
+  domain?: string;
 }
 
 export interface UserProfile {
