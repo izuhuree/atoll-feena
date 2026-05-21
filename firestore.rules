@@ -361,8 +361,7 @@ service cloud.firestore {
     match /diveSites/{siteId} {
       allow read: if true;
       allow create: if isSignedIn() && canPublishDiveSiteInfo() && isValidId(siteId) && isValidDiveSite(incoming()) && incoming().keys().hasAll(['name', 'atoll', 'difficulty']) && incoming().keys().size() >= 3;
-      allow update: if isSignedIn() && canPublishDiveSiteInfo() && isValidId(siteId) && isValidDiveSite(incoming()) &&
-        incoming().id == existing().id;
+      allow update: if isSignedIn() && canPublishDiveSiteInfo() && isValidId(siteId) && incoming().id == existing().id && (isValidDiveSite(incoming()) || (incoming().diff(existing()).affectedKeys().hasOnly(['description', 'descriptionSourceRefs', 'descriptionGeneratedAt', 'descriptionGeneratedBy', 'updatedAt']) && incoming().description is string && incoming().description.size() <= 1000 && (incoming().descriptionSourceRefs == null || incoming().descriptionSourceRefs is list && incoming().descriptionSourceRefs.size() <= 10) && (incoming().descriptionGeneratedAt == null || incoming().descriptionGeneratedAt is string) && (incoming().descriptionGeneratedBy == null || incoming().descriptionGeneratedBy is string) && incoming().updatedAt is string));
       allow delete: if isAdmin();
     }
 

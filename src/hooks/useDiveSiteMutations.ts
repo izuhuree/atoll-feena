@@ -1,4 +1,4 @@
-import { deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { deleteDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { stripUndefinedDeep } from '../lib/firestoreData';
 import { DiveSite } from '../types';
@@ -18,6 +18,21 @@ export function useDiveSiteMutations() {
     }
   };
 
+  const saveSiteDescription = async (site: DiveSite) => {
+    if (!db) return;
+    try {
+      await updateDoc(doc(db, 'diveSites', site.id), stripUndefinedDeep({
+        description: site.description || '',
+        descriptionSourceRefs: site.descriptionSourceRefs || [],
+        descriptionGeneratedAt: site.descriptionGeneratedAt,
+        descriptionGeneratedBy: site.descriptionGeneratedBy,
+        updatedAt: new Date().toISOString(),
+      }));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `diveSites/${site.id}`);
+    }
+  };
+
   const deleteSite = async (id: string) => {
     if (!db) return;
     try {
@@ -27,5 +42,5 @@ export function useDiveSiteMutations() {
     }
   };
 
-  return { saveSite, deleteSite };
+  return { saveSite, saveSiteDescription, deleteSite };
 }

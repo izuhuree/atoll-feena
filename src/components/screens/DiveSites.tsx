@@ -26,7 +26,7 @@ interface DiveSitesProps {
 }
 
 export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
-  const { saveSite, deleteSite } = useDiveSiteMutations();
+  const { saveSite, saveSiteDescription, deleteSite } = useDiveSiteMutations();
   const { submitSuggestion } = useDiveSiteSuggestions();
   const { canPublishDiveSiteInfo, canEditSketchInstructions } = useUserRole(user);
   const { effectiveSettings } = useAppSettings(Boolean(user), user);
@@ -107,7 +107,11 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
     } as DiveSite;
     try {
       if (canPublishDiveSiteInfo) {
-        await saveSite(siteToSave);
+        if (editingSiteId) {
+          await saveSiteDescription(siteToSave);
+        } else {
+          await saveSite(siteToSave);
+        }
         setSaveNotice('Dive site updated.');
       } else {
         await submitSuggestion(
