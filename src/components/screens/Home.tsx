@@ -1,21 +1,16 @@
-import { ReactNode } from 'react';
+import { useState } from 'react';
 import { User } from 'firebase/auth';
 import {
-  Activity,
   Anchor,
   AlertTriangle,
   ArrowRight,
-  Compass,
   Droplets,
-  Database,
   Fish,
   Leaf,
   LifeBuoy,
   Map,
   MapPinned,
-  MapPin,
   Radar,
-  ShieldAlert,
   ShipWheel,
   Thermometer,
   Trash2,
@@ -23,6 +18,18 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useHomeDashboard } from '../../hooks/useHomeDashboard';
+import {
+  ActionTile,
+  DashboardCard,
+  EmptyPanel,
+  ErrorPanel,
+  InfoList,
+  LoadingPanel,
+  MetricIcon,
+  QuickMetric,
+  SectionHeading,
+  SeeMoreButton,
+} from '../home/HomeDashboardUi';
 import { MaldivesActivityMap } from '../home/MaldivesActivityMap';
 
 interface HomeProps {
@@ -36,6 +43,11 @@ interface HomeProps {
 export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate }: HomeProps) {
   const firstName = user?.displayName?.split(' ')[0];
   const dashboard = useHomeDashboard();
+  const [showAllMetrics, setShowAllMetrics] = useState(false);
+  const [showSafetyDetails, setShowSafetyDetails] = useState(false);
+  const [showConservationDetails, setShowConservationDetails] = useState(false);
+  const [showSiteDetails, setShowSiteDetails] = useState(false);
+  const visibleMetrics = showAllMetrics ? dashboard.metrics : dashboard.metrics.slice(0, 4);
 
   return (
     <div className="px-4 pt-8 pb-24 sm:px-6">
@@ -75,8 +87,9 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
         ) : dashboard.metrics.every((metric) => metric.value === 0) ? (
           <EmptyPanel message="No recent dive activity in the last 30 days." />
         ) : (
+          <>
           <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {dashboard.metrics.map((metric) => (
+            {visibleMetrics.map((metric) => (
               <article
                 key={metric.label}
                 className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
@@ -92,6 +105,15 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
               </article>
             ))}
           </div>
+          {dashboard.metrics.length > 4 && (
+            <SeeMoreButton
+              expanded={showAllMetrics}
+              onClick={() => setShowAllMetrics((value) => !value)}
+              moreLabel="See all activity"
+              lessLabel="Show key activity"
+            />
+          )}
+          </>
         )}
       </section>
 
@@ -132,27 +154,54 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
                 />
               </div>
               <InfoList
+                label="Priority safety signals"
+                items={[
+                  ...dashboard.safety.strongCurrentSites.map((item) => `${item.siteName} strong current (${item.count})`),
+                  ...dashboard.safety.lowVisibilitySites.map((item) => `${item.siteName} low visibility (${item.count})`),
+                  ...dashboard.safety.recentHazards.map((item) => `Hazard: ${item}`),
+                ]}
+                maxItems={3}
+                compact
+              />
+              {showSafetyDetails && (
+                <div className="grid gap-3 sm:grid-cols-2">
+              <InfoList
                 label="Sites with strong current reports"
                 items={dashboard.safety.strongCurrentSites.map(
                   (item) => `${item.siteName} (${item.count})`
                 )}
+                maxItems={3}
+                compact
               />
               <InfoList
                 label="Sites with low visibility reports"
                 items={dashboard.safety.lowVisibilitySites.map(
                   (item) => `${item.siteName} (${item.count})`
                 )}
+                maxItems={3}
+                compact
               />
-              <InfoList label="Recently reported hazards" items={dashboard.safety.recentHazards} />
+              <InfoList label="Recently reported hazards" items={dashboard.safety.recentHazards} maxItems={3} compact />
               <InfoList
                 label="Most recently updated dive sites"
                 items={dashboard.safety.mostRecentlyUpdatedSites}
+                maxItems={3}
+                compact
               />
               <InfoList
                 label="Sites with stable recent conditions"
                 items={dashboard.safety.stableSites.map(
                   (item) => `${item.siteName} (${item.reports})`
                 )}
+                maxItems={3}
+                compact
+              />
+                </div>
+              )}
+              <SeeMoreButton
+                expanded={showSafetyDetails}
+                onClick={() => setShowSafetyDetails((value) => !value)}
+                moreLabel="See safety details"
               />
             </div>
           )}
@@ -178,6 +227,7 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
                 <QuickMetric icon={Trash2} label="Debris reports" value={dashboard.conservation.debrisSignals} />
                 <QuickMetric icon={Fish} label="Species sightings" value={dashboard.conservation.speciesSightings} />
               </div>
+              {showConservationDetails && (
               <div className="grid gap-3 sm:grid-cols-2">
                 <InfoList
                   label="Top conservation sites"
@@ -196,6 +246,12 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
                   compact
                 />
               </div>
+              )}
+              <SeeMoreButton
+                expanded={showConservationDetails}
+                onClick={() => setShowConservationDetails((value) => !value)}
+                moreLabel="See conservation details"
+              />
             </div>
           )}
         </DashboardCard>
@@ -211,6 +267,7 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
           {dashboard.loading ? (
             <LoadingPanel label="Loading dive site insights..." compact />
           ) : (
+            <div>
             <div className="grid gap-3 sm:grid-cols-2">
               <InfoList
                 label="Recently updated"
@@ -226,6 +283,8 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
                 maxItems={3}
                 compact
               />
+              {showSiteDetails && (
+                <>
               <InfoList
                 label="Needs more data"
                 items={dashboard.siteInsights.needsMoreData.map((site) => site.name)}
@@ -240,6 +299,14 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate 
                 maxItems={3}
                 compact
               />
+                </>
+              )}
+            </div>
+            <SeeMoreButton
+              expanded={showSiteDetails}
+              onClick={() => setShowSiteDetails((value) => !value)}
+              moreLabel="See site gaps"
+            />
             </div>
           )}
         </DashboardCard>
@@ -319,159 +386,4 @@ function HeroBanner({
       </div>
     </motion.section>
   );
-}
-
-function SectionHeading({
-  eyebrow,
-  title,
-  description,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon">{eyebrow}</p>
-      <h3 className="mt-1 text-2xl font-display font-bold text-maldives-deep">{title}</h3>
-      <p className="mt-1 text-sm text-slate-500">{description}</p>
-    </div>
-  );
-}
-
-function DashboardCard({
-  icon: Icon,
-  title,
-  description,
-  children,
-  compact = false,
-}: {
-  icon: typeof ShieldAlert;
-  title: string;
-  description: string;
-  children: ReactNode;
-  compact?: boolean;
-}) {
-  return (
-    <article className={`rounded-3xl border border-slate-100 bg-white shadow-sm ${compact ? 'p-4' : 'p-5'}`}>
-      <div className={`flex items-start gap-3 ${compact ? 'mb-3' : 'mb-4'}`}>
-        <div className="rounded-2xl bg-slate-50 p-2.5 shrink-0">
-          <Icon className="h-5 w-5 text-maldives-lagoon" />
-        </div>
-        <div>
-          <h4 className={`${compact ? 'text-base' : 'text-lg'} font-display font-bold text-maldives-deep`}>{title}</h4>
-          <p className="text-xs text-slate-500">{description}</p>
-        </div>
-      </div>
-      {children}
-    </article>
-  );
-}
-
-function InfoList({
-  label,
-  items,
-  emptyText = 'No recent items.',
-  maxItems,
-  compact = false,
-}: {
-  label: string;
-  items: string[];
-  emptyText?: string;
-  maxItems?: number;
-  compact?: boolean;
-}) {
-  const visibleItems = maxItems ? items.slice(0, maxItems) : items;
-
-  return (
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
-      {visibleItems.length === 0 ? (
-        <p className="mt-1 text-xs text-slate-500">{emptyText}</p>
-      ) : (
-        <ul className={`mt-2 ${compact ? 'space-y-1' : 'space-y-1.5'}`}>
-          {visibleItems.map((item) => (
-            <li key={`${label}-${item}`} className={`rounded-xl bg-slate-50 px-3 text-xs font-semibold text-slate-700 ${compact ? 'py-1.5' : 'py-2'}`}>
-              {item}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function ActionTile({
-  icon: Icon,
-  title,
-  subtitle,
-  onClick,
-  compact = false,
-}: {
-  icon: typeof Waves;
-  title: string;
-  subtitle: string;
-  onClick?: () => void;
-  compact?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-2xl border border-slate-100 bg-white text-left shadow-sm active:scale-[0.98] ${compact ? 'p-3' : 'p-4'}`}
-    >
-      <Icon className={`text-maldives-lagoon ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
-      <p className={`mt-2 font-display font-bold text-maldives-deep ${compact ? 'text-sm' : 'text-base'}`}>
-        {title}
-      </p>
-      <p className={`text-slate-500 ${compact ? 'text-[11px]' : 'text-xs'}`}>{subtitle}</p>
-    </button>
-  );
-}
-
-function LoadingPanel({ label, compact = false }: { label: string; compact?: boolean }) {
-  return (
-    <div className={`rounded-2xl bg-slate-50 text-slate-500 ${compact ? 'p-3 text-xs' : 'p-4 text-sm'}`}>
-      {label}
-    </div>
-  );
-}
-
-function EmptyPanel({ message, compact = false }: { message: string; compact?: boolean }) {
-  return (
-    <div className={`rounded-2xl border border-slate-100 bg-slate-50 text-slate-500 ${compact ? 'p-3 text-xs' : 'p-4 text-sm'}`}>
-      {message}
-    </div>
-  );
-}
-
-function ErrorPanel({ message }: { message: string }) {
-  return (
-    <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
-      {message}
-    </div>
-  );
-}
-
-function QuickMetric({ icon: Icon, label, value }: { icon: typeof Waves; label: string; value: number }) {
-  return (
-    <div className="rounded-xl bg-slate-50 px-2.5 py-2">
-      <Icon className="mb-1.5 h-4 w-4 text-maldives-lagoon" />
-      <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400 leading-tight">{label}</p>
-      <p className="mt-1 text-lg font-display font-bold text-maldives-deep">{value}</p>
-    </div>
-  );
-}
-
-function MetricIcon({ label }: { label: string }) {
-  const Icon =
-    label.includes('Dive Logs') ? ShipWheel :
-    label.includes('Active Dive Sites') ? MapPinned :
-    label.includes('Atolls') ? Map :
-    label.includes('Species') ? Fish :
-    label.includes('Coral') ? Leaf :
-    label.includes('Debris') ? Trash2 :
-    label.includes('Safety') ? LifeBuoy :
-    AlertTriangle;
-
-  return <Icon className="h-4 w-4" />;
 }
