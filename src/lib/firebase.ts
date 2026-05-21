@@ -88,25 +88,29 @@ export const ensureAuthPersistence = async () => {
 
 export const signInWithGoogle = async () => {
   if (!auth) throw new Error('Firebase auth is not configured.');
-  await ensureAuthPersistence();
+  const mobileBrowser = isMobileBrowser();
 
-  if (isMobileBrowser()) {
-    if (isInAppBrowser()) {
-      throw new Error('Google sign-in is blocked in in-app browsers. Please open AtollFeeNa in Safari or Chrome and try again.');
-    }
-    await signInWithRedirect(auth, googleProvider);
-    return;
+  if (mobileBrowser && isInAppBrowser()) {
+    throw new Error('Google sign-in is blocked in in-app browsers. Please open AtollFeeNa in Safari or Chrome and try again.');
   }
 
   try {
+    // Keep popup directly tied to the button tap. Mobile browsers often block popups
+    // after awaited work, which can look like a login loop.
     await signInWithPopup(auth, googleProvider);
   } catch (error: unknown) {
     if (error instanceof Error && 'code' in error) {
       const authError = error as AuthError;
-      if (authError.code === 'auth/popup-blocked' || authError.code === 'auth/cancelled-popup-request') {
-        if (isMobileBrowser()) {
-          throw new Error('Sign-in popup was blocked on mobile. Please open AtollFeeNa in your phone browser and allow popups.');
+      const popupFailed =
+        authError.code === 'auth/popup-blocked' ||
+        authError.code === 'auth/cancelled-popup-request' ||
+        authError.code === 'auth/popup-closed-by-user';
+
+      if (popupFailed) {
+        if (mobileBrowser) {
+          throw new Error('Google sign-in was not completed. Open AtollFeeNa in Safari or Chrome, allow popups, and try again.');
         }
+        await ensureAuthPersistence();
         await signInWithRedirect(auth, googleProvider);
         return;
       }
