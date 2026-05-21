@@ -343,7 +343,7 @@ export function DiveSiteForm({
             disabled={!newSite.name}
             className="w-full min-h-[56px] py-4 bg-maldives-deep text-white rounded-[24px] font-bold shadow-xl shadow-maldives-shallow/50 active:scale-[0.98] transition-transform text-sm uppercase tracking-widest disabled:opacity-50"
           >
-            {submitLabel || (editing ? 'Update Dive Site' : 'Save Dive Site')}
+            {submitLabel || (!canEditStructured ? 'Submit Suggestion' : editing ? 'Update Dive Site' : 'Save Dive Site')}
           </button>
         </div>
       </motion.div>

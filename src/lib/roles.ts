@@ -39,6 +39,10 @@ export const ROLE_OPTIONS: RoleOption[] = [
   },
 ];
 
+export const REVIEW_ROLE_OPTIONS = ROLE_OPTIONS.filter((role) =>
+  ['dive-professional', 'dive-centre-manager', 'marine-science-reviewer'].includes(role.value)
+);
+
 export function getRoleLabel(role?: UserRole) {
   return ROLE_OPTIONS.find((option) => option.value === role)?.label || 'Recreational Diver';
 }

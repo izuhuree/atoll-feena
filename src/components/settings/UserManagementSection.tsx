@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Search, ShieldCheck, UserRound, UsersRound } from 'lucide-react';
 import { useAdminUsers } from '../../hooks/useAdminUsers';
-import { getRoleLabel, ROLE_OPTIONS } from '../../lib/roles';
+import { getRoleLabel, REVIEW_ROLE_OPTIONS, ROLE_OPTIONS } from '../../lib/roles';
 import { UserAccessStatus, UserRole } from '../../types';
 
 const ACCESS_STATUSES: UserAccessStatus[] = ['active', 'pending', 'disabled', 'invited'];
@@ -67,6 +67,11 @@ export function UserManagementSection({ enabled, currentUserId }: UserManagement
       </div>
 
       {error && <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700 mb-4">{error}</p>}
+      <ReviewRightsPanel
+        isSaving={isSaving}
+        users={users}
+        onGrant={(uid, role, name) => handleRoleChange(uid, role, name)}
+      />
       {isLoading && <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">Loading users...</p>}
       {!isLoading && filteredUsers.length === 0 && (
         <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">No users match this filter.</p>
@@ -131,6 +136,62 @@ export function UserManagementSection({ enabled, currentUserId }: UserManagement
           </article>
         ))}
       </div>
+    </section>
+  );
+}
+
+function ReviewRightsPanel({
+  users,
+  isSaving,
+  onGrant,
+}: {
+  users: ReturnType<typeof useAdminUsers>['users'];
+  isSaving: boolean;
+  onGrant: (uid: string, role: UserRole, name: string) => Promise<void>;
+}) {
+  const candidates = users.filter((user) => user.role !== 'platform-admin');
+
+  return (
+    <section className="mb-4 rounded-3xl border border-cyan-100 bg-cyan-50/60 p-4">
+      <div className="mb-3 flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-maldives-lagoon">
+          <ShieldCheck className="h-5 w-5" />
+        </div>
+        <div>
+          <h4 className="font-display text-lg font-bold text-maldives-deep">Review & Approval Rights</h4>
+          <p className="mt-1 text-xs leading-relaxed text-slate-600">
+            Grant trusted roles to users who can approve dive-site information, sketch instructions, and conservation-relevant updates.
+          </p>
+        </div>
+      </div>
+
+      {candidates.length === 0 ? (
+        <p className="rounded-2xl bg-white px-4 py-3 text-xs font-semibold text-slate-500">
+          No eligible users are available yet.
+        </p>
+      ) : (
+        <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+          {candidates.map((user) => (
+            <div key={user.uid} className="rounded-2xl bg-white p-3">
+              <p className="truncate text-sm font-bold text-maldives-deep">{user.name}</p>
+              <p className="truncate text-xs text-slate-500">{user.email}</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                {REVIEW_ROLE_OPTIONS.map((role) => (
+                  <button
+                    key={role.value}
+                    type="button"
+                    disabled={isSaving || user.role === role.value}
+                    onClick={() => onGrant(user.uid, role.value, user.name)}
+                    className="min-h-[44px] rounded-xl bg-maldives-deep px-3 text-[11px] font-bold text-white disabled:bg-slate-100 disabled:text-slate-400"
+                  >
+                    {user.role === role.value ? 'Assigned' : role.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
