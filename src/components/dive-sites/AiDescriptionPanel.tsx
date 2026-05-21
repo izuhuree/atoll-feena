@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Loader2, Sparkles, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { DiveSite, SourceReference } from '../../types';
 import { cn } from '../../lib/utils';
@@ -11,6 +12,11 @@ interface AiDescriptionPanelProps {
 
 export function AiDescriptionPanel({ site, canGenerate, onApply }: AiDescriptionPanelProps) {
   const { draft, isGenerating, error, generate } = useDiveSiteDescriptionAI();
+  const [draftText, setDraftText] = useState('');
+
+  useEffect(() => {
+    setDraftText(draft?.description || '');
+  }, [draft]);
 
   if (!canGenerate) return null;
 
@@ -19,10 +25,10 @@ export function AiDescriptionPanel({ site, canGenerate, onApply }: AiDescription
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-cyan-700">
-            Verified Description
+            AI-Assisted Description
           </p>
           <p className="text-xs font-medium leading-relaxed text-slate-600">
-            Generate a sourced draft, review the links, then apply it before saving.
+            Draft from app data and available references. Review and edit before submitting.
           </p>
         </div>
         <button
@@ -37,7 +43,7 @@ export function AiDescriptionPanel({ site, canGenerate, onApply }: AiDescription
           )}
         >
           {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {isGenerating ? 'Searching' : 'Improve with AI'}
+          {isGenerating ? 'Drafting' : 'Draft Description'}
         </button>
       </div>
 
@@ -49,13 +55,29 @@ export function AiDescriptionPanel({ site, canGenerate, onApply }: AiDescription
 
       {draft && (
         <div className="mt-3 space-y-3 rounded-2xl bg-white p-3">
-          <p className="text-sm leading-relaxed text-slate-700">{draft.description}</p>
+          <label
+            htmlFor="ai-description-draft"
+            className="text-[10px] font-bold uppercase tracking-widest text-slate-400"
+          >
+            Editable draft
+          </label>
+          <textarea
+            id="ai-description-draft"
+            value={draftText}
+            onChange={(event) => setDraftText(event.target.value)}
+            className="min-h-[132px] w-full rounded-2xl border-none bg-slate-50 p-4 text-sm font-medium leading-relaxed text-slate-700 focus:ring-2 focus:ring-maldives-lagoon/20"
+          />
           <div>
             <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
               Sources to review
             </p>
-            <ul className="space-y-2">
-              {draft.sources.map((source) => (
+            {draft.sources.length === 0 ? (
+              <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500">
+                No source links were returned. Review carefully and add local knowledge before saving.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {draft.sources.map((source) => (
                 <li key={source.url}>
                   <a
                     href={source.url}
@@ -67,13 +89,15 @@ export function AiDescriptionPanel({ site, canGenerate, onApply }: AiDescription
                     <span className="line-clamp-1">{source.title || source.domain || source.url}</span>
                   </a>
                 </li>
-              ))}
-            </ul>
+                ))}
+              </ul>
+            )}
           </div>
           {draft.notes && <p className="text-xs font-medium text-slate-500">{draft.notes}</p>}
           <button
             type="button"
-            onClick={() => onApply(draft.description, draft.sources)}
+            onClick={() => onApply(draftText.trim(), draft.sources)}
+            disabled={!draftText.trim()}
             className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-maldives-lagoon px-4 text-xs font-bold uppercase tracking-widest text-white active:scale-95"
           >
             <CheckCircle2 className="h-4 w-4" />

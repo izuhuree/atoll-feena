@@ -4,15 +4,14 @@ import {
   Anchor,
   AlertTriangle,
   ArrowRight,
+  BookOpen,
+  ClipboardList,
   Droplets,
   Fish,
   Crown,
+  Gauge,
   Leaf,
   LifeBuoy,
-  Map,
-  MapPinned,
-  Radar,
-  ShipWheel,
   Thermometer,
   Trash2,
   Waves,
@@ -31,7 +30,6 @@ import {
   SectionHeading,
   SeeMoreButton,
 } from '../home/HomeDashboardUi';
-import { MaldivesActivityMap } from '../home/MaldivesActivityMap';
 
 interface HomeProps {
   user: User | null;
@@ -79,7 +77,7 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate,
         </div>
       </header>
 
-      <HeroBanner onPrimaryAction={onLogDive} activityPoints={dashboard.activityMapPoints} />
+      <HeroBanner onPrimaryAction={onLogDive} />
 
       <button
         type="button"
@@ -100,19 +98,19 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate,
 
       <section className="mt-4 grid grid-cols-3 gap-3">
         <ActionTile
-          icon={ShipWheel}
+          icon={ClipboardList}
           title="Log Dive"
           subtitle="Add reef and safety data"
           onClick={onLogDive}
         />
         <ActionTile
-          icon={Radar}
+          icon={Gauge}
           title="Insights"
           subtitle="Review dive trends"
           onClick={onOpenInsights}
         />
         <ActionTile
-          icon={MapPinned}
+          icon={Anchor}
           title="Sites"
           subtitle="Site intelligence"
           onClick={() => onNavigate?.('sites')}
@@ -129,7 +127,7 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate,
           featured
         />
         <ActionTile
-          icon={Anchor}
+          icon={BookOpen}
           title="Logbook"
           subtitle="Saved dive records"
           onClick={() => onNavigate?.('logbook')}
@@ -142,6 +140,24 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate,
           onClick={onOpenGuide}
           compact
         />
+      </section>
+
+      <section className="mt-4 rounded-3xl border border-cyan-100 bg-white p-4 shadow-sm">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon">How each dive helps</p>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+          {[
+            { icon: ClipboardList, label: 'Dive log' },
+            { icon: LifeBuoy, label: 'Safety update' },
+            { icon: Leaf, label: 'Reef record' },
+            { icon: Fish, label: 'Species data' },
+            { icon: Gauge, label: 'Site insight' },
+          ].map(({ icon: Icon, label }) => (
+            <div key={label} className="rounded-2xl bg-slate-50 px-3 py-3">
+              <Icon className="mb-2 h-4 w-4 text-maldives-lagoon" />
+              <p className="text-xs font-bold text-maldives-deep">{label}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="mt-6">
@@ -218,7 +234,7 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate,
                   value={dashboard.safety.recentHazards.length}
                 />
                 <QuickMetric
-                  icon={MapPinned}
+                  icon={Anchor}
                   label="Recently updated"
                   value={dashboard.safety.mostRecentlyUpdatedSites.length}
                 />
@@ -329,7 +345,7 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate,
 
       <section className="mt-8">
         <DashboardCard
-          icon={Map}
+          icon={Anchor}
           title="Dive Site Insights"
           description="Recent site activity, data gaps, and profiles that need contribution."
           compact
@@ -382,24 +398,42 @@ export function Home({ user, onLogDive, onOpenInsights, onOpenGuide, onNavigate,
         </DashboardCard>
       </section>
 
+      <section className="mt-4 rounded-3xl border border-emerald-100 bg-emerald-50/80 p-4">
+        <div className="flex gap-3">
+          <Leaf className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
+          <div>
+            <p className="text-sm font-bold text-emerald-900">Structured for future marine data review</p>
+            <p className="mt-1 text-xs leading-relaxed text-emerald-800">
+              Dive observations are stored with site, time, contributor, condition, reef, species, and debris fields so trusted reviewers can assess future export readiness.
+            </p>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }
 
 function HeroBanner({
   onPrimaryAction,
-  activityPoints,
 }: {
   onPrimaryAction: () => void;
-  activityPoints: Array<{ id: string; name: string; atoll: string; lat: number; lng: number; reports: number }>;
 }) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-teal-700 via-teal-600 to-cyan-700 px-5 py-8 text-white shadow-lg shadow-teal-900/15 sm:px-8 sm:py-10"
+      className="relative min-h-[280px] overflow-hidden rounded-[28px] bg-gradient-to-br from-teal-700 via-teal-600 to-cyan-700 px-5 py-8 text-white shadow-lg shadow-teal-900/15 sm:min-h-[300px] sm:px-8 sm:py-10"
     >
-      <MaldivesActivityMap points={activityPoints} />
+      <div className="absolute inset-0 bg-teal-700/35" />
+      <img
+        src="/maldives-location-map-horizontal.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-45 mix-blend-screen"
+        style={{ objectPosition: 'center center' }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-r from-teal-900/95 via-teal-800/75 to-teal-700/25" />
       <div className="relative z-10 max-w-3xl">
       <h2 className="text-3xl font-display font-bold leading-tight sm:text-4xl">
         Start Contributing Today

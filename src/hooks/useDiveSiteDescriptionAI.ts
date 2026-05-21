@@ -95,10 +95,10 @@ export function useDiveSiteDescriptionAI() {
 
       const parsed = parseDraft(response.text || '{}');
       const groundedSources = extractGroundingSources(response);
-      const sources = uniqueSources([...parsed.sources, ...groundedSources]).slice(0, 8);
+      const sources = uniqueSources([...parsed.sources, ...groundedSources]).slice(0, 5);
 
-      if (!parsed.description || sources.length < 5) {
-        throw new Error('AI could not verify at least five usable source links for this site.');
+      if (!parsed.description) {
+        throw new Error('AI could not generate a reliable description. Add more site details first.');
       }
 
       setDraft({ ...parsed, sources });

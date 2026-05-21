@@ -19,6 +19,11 @@ export function useDiveSiteSuggestions() {
       status: 'pending',
       submittedBy: auth.currentUser.uid,
       submittedAt,
+      generatedByAI: Boolean(site.descriptionGeneratedAt),
+      editedByContributor: true,
+      sourcesUsed: site.descriptionSourceRefs || [],
+      generatedAt: site.descriptionGeneratedAt,
+      reviewStatus: 'suggested',
     };
 
     try {

@@ -115,9 +115,17 @@ export function SiteVisualsPanel({ site }: SiteVisualsPanelProps) {
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                 {imageUrl ? 'AI sketch · cached' : 'Procedural fallback'}
               </p>
-              <p className="text-[10px] font-semibold text-slate-400">
-                {site.sketchInstructions?.trim() ? 'Using sketch instructions' : 'Using site description'}
-              </p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                <StatusPill tone={imageUrl ? 'cyan' : 'slate'}>
+                  {imageUrl ? 'AI generated' : 'Not AI generated'}
+                </StatusPill>
+                <StatusPill tone={site.sketchInstructions?.trim() ? 'emerald' : 'amber'}>
+                  {site.sketchInstructions?.trim() ? 'Reviewed instructions' : 'Needs review'}
+                </StatusPill>
+                {site.aiSketchGeneratedAt && (
+                  <StatusPill tone="slate">{formatShortDate(site.aiSketchGeneratedAt)}</StatusPill>
+                )}
+              </div>
             </div>
             {canGenerate && (
               <button
@@ -185,6 +193,21 @@ export function SiteVisualsPanel({ site }: SiteVisualsPanelProps) {
       )}
     </div>
   );
+}
+
+function StatusPill({ children, tone }: { children: string; tone: 'cyan' | 'emerald' | 'amber' | 'slate' }) {
+  const toneClass = {
+    cyan: 'bg-cyan-50 text-cyan-700',
+    emerald: 'bg-emerald-50 text-emerald-700',
+    amber: 'bg-amber-50 text-amber-700',
+    slate: 'bg-slate-100 text-slate-500',
+  }[tone];
+  return <span className={cn('rounded-full px-2 py-1 text-[10px] font-bold', toneClass)}>{children}</span>;
+}
+
+function formatShortDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Date unknown' : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function TabButton({

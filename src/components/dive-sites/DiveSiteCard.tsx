@@ -10,6 +10,7 @@ import {
   Trash2,
   Waves,
 } from 'lucide-react';
+import { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { DiveSite } from '../../types';
@@ -78,6 +79,7 @@ export function DiveSiteCard({
         <p className={cn('text-slate-600 text-sm leading-relaxed mb-4', !isExpanded && 'line-clamp-2')}>
           {site.description}
         </p>
+        <DescriptionBadges site={site} />
 
         <div className="flex flex-wrap gap-3 mb-5">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
@@ -208,9 +210,17 @@ function SiteIntelligenceSummary({
           <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon">
             Recent Diver Intelligence
           </p>
-          <p className="text-[11px] font-semibold text-slate-500">
-            {summary.reportCount} report{summary.reportCount === 1 ? '' : 's'} · {summary.confidence} confidence
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <Badge tone={summary.confidence === 'high' ? 'emerald' : summary.confidence === 'medium' ? 'cyan' : 'amber'}>
+              {summary.confidence} confidence
+            </Badge>
+            <Badge tone="slate">
+              {summary.reportCount} report{summary.reportCount === 1 ? '' : 's'}
+            </Badge>
+            {summary.latestReportTime && (
+              <Badge tone="slate">Updated {formatRelativeDate(summary.latestReportTime)}</Badge>
+            )}
+          </div>
         </div>
         <Waves className="h-5 w-5 text-maldives-lagoon" />
       </div>
@@ -230,6 +240,41 @@ function SiteIntelligenceSummary({
       )}
     </div>
   );
+}
+
+function DescriptionBadges({ site }: { site: DiveSite }) {
+  return (
+    <div className="mb-4 flex flex-wrap gap-1.5">
+      <Badge tone={site.descriptionGeneratedAt ? 'cyan' : 'slate'}>
+        {site.descriptionGeneratedAt ? 'AI-assisted description' : 'Community description'}
+      </Badge>
+      <Badge tone={site.descriptionSourceRefs?.length ? 'emerald' : 'amber'}>
+        {site.descriptionSourceRefs?.length ? `${site.descriptionSourceRefs.length} source${site.descriptionSourceRefs.length === 1 ? '' : 's'}` : 'Sources needed'}
+      </Badge>
+      <Badge tone={site.dataQuality === 'detailed' ? 'emerald' : 'amber'}>
+        {site.dataQuality === 'detailed' ? 'Detailed profile' : 'Needs profile review'}
+      </Badge>
+    </div>
+  );
+}
+
+function Badge({ children, tone }: { children: ReactNode; tone: 'emerald' | 'cyan' | 'amber' | 'slate' }) {
+  const toneClass = {
+    emerald: 'bg-emerald-50 text-emerald-700',
+    cyan: 'bg-cyan-50 text-cyan-700',
+    amber: 'bg-amber-50 text-amber-700',
+    slate: 'bg-white text-slate-500',
+  }[tone];
+  return <span className={cn('rounded-full px-2 py-1 text-[10px] font-bold capitalize', toneClass)}>{children}</span>;
+}
+
+function formatRelativeDate(value: string) {
+  const timestamp = new Date(value).getTime();
+  if (Number.isNaN(timestamp)) return 'recently';
+  const days = Math.max(0, Math.round((Date.now() - timestamp) / (24 * 60 * 60 * 1000)));
+  if (days === 0) return 'today';
+  if (days === 1) return '1 day ago';
+  return `${days} days ago`;
 }
 
 function MiniStat({ label, value }: { label: string; value: string }) {

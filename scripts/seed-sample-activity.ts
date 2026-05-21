@@ -124,9 +124,23 @@ const surges = ['none', 'mild', 'moderate', 'strong', 'unknown'] as const;
 const entryStates = ['easy', 'manageable', 'challenging', 'hazardous', 'unknown'] as const;
 const visibilities = [6, 8, 10, 14, 18, 22, 26, 30];
 const waterTemps = [27, 28, 29, 30];
-const siteChoices = SEED_SITES_DATA.filter((site) =>
+const preferredDemoSiteIds = [
+  'banana-reef',
+  'maaya-thila',
+  'hanifaru-bay',
+  'fuvahmulah-tiger-zoo',
+  'british-loyalty-wreck',
+  'orimas-thila',
+  'manta-point-addu',
+  'fotteyo-kandu',
+].filter((id) => SEED_SITES_DATA.some((site) => site.id === id));
+const preferredDemoSites = preferredDemoSiteIds
+  .map((id) => SEED_SITES_DATA.find((site) => site.id === id))
+  .filter((site): site is (typeof SEED_SITES_DATA)[number] => Boolean(site));
+const regionalDemoSites = SEED_SITES_DATA.filter((site) =>
   ['North Malé', 'South Malé', 'North Ari', 'South Ari', 'Baa', 'Vaavu', 'Fuvahmulah', 'Addu'].includes(site.atoll)
-).slice(0, 22);
+);
+const siteChoices = [...preferredDemoSites, ...regionalDemoSites.filter((site) => !preferredDemoSiteIds.includes(site.id))].slice(0, 28);
 
 const toFirestoreValue = (value: unknown): FirestoreValue => {
   if (value === null || value === undefined) return { nullValue: null };
@@ -330,17 +344,23 @@ async function main() {
     );
   });
 
-  const generatedLogs = Array.from({ length: 40 }).map((_, index) => buildSampleDiveLog(index));
+  const generatedLogs = Array.from({ length: 72 }).map((_, index) => buildSampleDiveLog(index));
   generatedLogs.forEach((item) => {
     writes.push(buildWrite('diveLogs', item.logId, item.diveLog));
     writes.push(buildWrite('siteConditionReports', item.reportId, { ...item.siteConditionReport, id: item.reportId }));
   });
 
   // Add a few explicit site metadata updates so dashboard "incomplete/missing" states are testable.
-  const sketchSeedSites = siteChoices.slice(0, 10);
+  const sketchSeedSites = siteChoices.slice(0, 14);
   sketchSeedSites.forEach((site, index) => {
     writes.push(
       buildWrite('diveSites', site.id, {
+        descriptionGeneratedAt: isoDaysAgo(index + 1),
+        descriptionGeneratedBy: 'sample-ai-review-workflow',
+        descriptionSourceRefs: [
+          { title: `${site.name} local dive briefing`, url: 'https://visitmaldives.com', domain: 'visitmaldives.com' },
+          { title: `${site.atoll} marine conditions reference`, url: 'https://www.padi.com', domain: 'padi.com' },
+        ],
         sketchInstructions:
           index % 3 === 0
             ? ''

@@ -228,8 +228,6 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
           </div>
         </section>
 
-        <DiveSiteMappingSection sites={filteredSites} hasFilter={hasFilter} />
-
         <div className="mb-4 flex items-end justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon">Directory</p>
@@ -299,6 +297,8 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
           </button>
         )}
       </div>
+
+        <DiveSiteMappingSection sites={filteredSites} hasFilter={hasFilter} />
       </div>
 
       <AnimatePresence>

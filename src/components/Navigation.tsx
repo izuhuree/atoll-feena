@@ -1,7 +1,7 @@
 import {
   Home,
   PlusCircle,
-  Map as MapIcon,
+  Anchor,
   BookOpen,
   User,
 } from 'lucide-react';
@@ -31,7 +31,7 @@ interface NavigationProps {
 export function Navigation({ currentTab, onTabChange }: NavigationProps) {
   const tabs: Array<{ id: Tab; icon: any; label: string }> = [
     { id: 'home', icon: Home, label: 'Home' },
-    { id: 'sites', icon: MapIcon, label: 'Sites' },
+    { id: 'sites', icon: Anchor, label: 'Sites' },
     { id: 'quick-log', icon: PlusCircle, label: 'Log' },
     { id: 'logbook', icon: BookOpen, label: 'Logs' },
     { id: 'profile', icon: User, label: 'Me' },

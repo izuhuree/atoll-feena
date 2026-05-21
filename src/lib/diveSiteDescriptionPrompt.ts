@@ -15,7 +15,7 @@ export function buildDiveSiteDescriptionPrompt(site: Partial<DiveSite>) {
   ].filter(Boolean).join('\n');
 
   return `
-Use Google Search grounding to find at least five reliable, verifiable sources about this Maldives recreational scuba dive site.
+Use Google Search grounding and the app facts to find up to five reliable, verifiable sources about this Maldives recreational scuba dive site.
 
 Prioritise sources such as PADI, recognised local dive centres, resort dive centres, Maldives tourism boards, marine conservation organisations, scientific or protected-area references, and reputable dive guides.
 
@@ -24,7 +24,7 @@ ${facts}
 
 Return only valid JSON with this shape:
 {
-  "description": "Concise practical description, 120-180 words.",
+  "description": "Concise practical description, 90-140 words.",
   "sources": [
     { "title": "Source title", "url": "https://example.com/page", "domain": "example.com" }
   ],
@@ -36,5 +36,6 @@ Description requirements:
 - Focus on diver safety, conservation, conditions, reef structure, depth range, currents, visibility, entry/exit guidance, hazards, marine life, coral health or sensitivity, and responsible diving.
 - Do not use marketing language.
 - Do not invent exact facts if sources disagree or are weak.
-- Include at least five source links.`;
+- Do not copy website wording directly; write an original description.
+- Include no more than five source links.`;
 }

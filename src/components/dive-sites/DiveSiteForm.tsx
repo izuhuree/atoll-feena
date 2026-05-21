@@ -2,6 +2,7 @@ import { AlertCircle, ShieldCheck, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Atoll, DiveSite } from '../../types';
 import { cn } from '../../lib/utils';
+import { auth } from '../../lib/firebase';
 import { useAtolls } from '../../hooks/useAtolls';
 import { AiDescriptionPanel } from './AiDescriptionPanel';
 
@@ -37,7 +38,7 @@ export function DiveSiteForm({
     setNewSite({
       ...newSite,
       description,
-      sketchInstructions: hasCustomSketchInstructions ? newSite.sketchInstructions : description,
+      sketchInstructions: canEditSketchInstructions && !hasCustomSketchInstructions ? description : newSite.sketchInstructions,
     });
   };
 
@@ -52,7 +53,8 @@ export function DiveSiteForm({
       description,
       descriptionSourceRefs,
       descriptionGeneratedAt: generatedAt,
-      sketchInstructions: hasCustomSketchInstructions ? newSite.sketchInstructions : description,
+      descriptionGeneratedBy: auth?.currentUser?.uid || 'ai-assisted',
+      sketchInstructions: canEditSketchInstructions && !hasCustomSketchInstructions ? description : newSite.sketchInstructions,
     });
   };
 
@@ -285,7 +287,7 @@ export function DiveSiteForm({
               />
               <AiDescriptionPanel
                 site={newSite}
-                canGenerate={canEditStructured}
+                canGenerate
                 onApply={applyAiDescription}
               />
             </div>

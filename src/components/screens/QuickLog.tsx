@@ -34,6 +34,7 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showStepError, setShowStepError] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const {
     uploadingProgress,
@@ -182,7 +183,8 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
           privacy: 'public aggregate',
         },
       } as any);
-      onComplete();
+      setSuccessMessage(buildContributionMessage(formData));
+      window.setTimeout(onComplete, 1400);
     } catch (error) {
       console.error('Failed to log dive:', error);
       setStatusMessage('Failed to save this dive. Please try again.');
@@ -276,6 +278,11 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
                 {statusMessage}
               </p>
             )}
+            {successMessage && (
+              <p className="rounded-2xl bg-emerald-50 px-3 py-2 text-center text-xs font-bold text-emerald-700" role="status">
+                {successMessage}
+              </p>
+            )}
             {step < TOTAL_STEPS ? (
               <button
                 onClick={handleNext}
@@ -347,4 +354,17 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
       )}
     </div>
   );
+}
+
+function buildContributionMessage(formData: ReturnType<typeof useQuickLogForm>['formData']) {
+  const updates = [
+    formData.siteConditions ? 'site conditions' : '',
+    (formData.speciesObservations?.length || 0) > 0 ? 'species sightings' : '',
+    (formData.reefHealthObservations?.length || 0) > 0 ? 'reef health' : '',
+    (formData.debrisObservations?.length || 0) > 0 ? 'debris records' : '',
+  ].filter(Boolean);
+
+  return updates.length > 0
+    ? `Dive saved. Your log updated ${updates.join(', ')} for this site.`
+    : 'Dive saved. Your log strengthens the shared reef and safety record.';
 }

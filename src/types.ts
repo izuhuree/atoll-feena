@@ -49,6 +49,12 @@ export type UserRole =
 export type UserAccessStatus = 'active' | 'pending' | 'disabled' | 'invited';
 
 export type DiveSiteSuggestionStatus = 'pending' | 'approved' | 'rejected';
+export type DiveSiteSuggestionReviewStatus =
+  | 'draft'
+  | 'suggested'
+  | 'under-review'
+  | 'approved'
+  | 'rejected';
 
 export interface DiveSite {
   id: string;
@@ -343,6 +349,11 @@ export interface DiveSiteEditSuggestion {
   proposedDescription?: string;
   proposedSite?: Partial<DiveSite>;
   status: DiveSiteSuggestionStatus;
+  reviewStatus?: DiveSiteSuggestionReviewStatus;
+  generatedByAI?: boolean;
+  editedByContributor?: boolean;
+  sourcesUsed?: SourceReference[];
+  generatedAt?: string;
   submittedBy: string;
   submittedAt: string;
   reviewedBy?: string;

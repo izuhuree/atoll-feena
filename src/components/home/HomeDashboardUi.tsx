@@ -1,16 +1,16 @@
 import { ReactNode } from 'react';
 import {
   AlertTriangle,
+  Anchor,
   ChevronDown,
   ChevronUp,
+  ClipboardList,
   Fish,
+  Gauge,
   Leaf,
   LifeBuoy,
   Map,
-  MapPinned,
-  ShipWheel,
   Trash2,
-  Waves,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -161,13 +161,15 @@ export function QuickMetric({ icon: Icon, label, value }: { icon: LucideIcon; la
 
 export function MetricIcon({ label }: { label: string }) {
   const Icon =
-    label.includes('Dive Logs') ? ShipWheel :
-    label.includes('Active Dive Sites') ? MapPinned :
+    label.includes('Dive Logs') ? ClipboardList :
+    label.includes('Active Dive Sites') ? Anchor :
     label.includes('Atolls') ? Map :
     label.includes('Species') ? Fish :
     label.includes('Coral') ? Leaf :
     label.includes('Debris') ? Trash2 :
     label.includes('Safety') ? LifeBuoy :
+    label.includes('Hazard') ? AlertTriangle :
+    label.includes('Current') ? Gauge :
     AlertTriangle;
 
   return <Icon className="h-4 w-4" />;
