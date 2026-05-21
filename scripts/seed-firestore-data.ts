@@ -47,10 +47,22 @@ const observationCatalog = [
     options: ['none', 'mild', 'moderate', 'strong', 'very strong', 'unknown'],
   },
   {
+    id: 'currentDirection',
+    label: 'Current direction',
+    sortOrder: 15,
+    options: ['incoming', 'outgoing', 'cross', 'variable', 'none', 'unknown'],
+  },
+  {
     id: 'surge',
     label: 'Surge',
     sortOrder: 20,
     options: ['none', 'mild', 'moderate', 'strong', 'unknown'],
+  },
+  {
+    id: 'surfaceConditions',
+    label: 'Surface conditions',
+    sortOrder: 25,
+    options: ['calm', 'choppy', 'rough', 'unknown'],
   },
   {
     id: 'entryExitDifficulty',

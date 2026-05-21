@@ -16,8 +16,10 @@ export function useQuickLogForm() {
     siteConditions: {
       visibilityMeters: 20,
       current: 'mild',
+      currentDirection: 'unknown',
       surge: 'mild',
       waterTempC: 29,
+      surfaceConditions: 'unknown',
       entryExitDifficulty: 'manageable',
       hazards: [],
       hazardNotes: '',

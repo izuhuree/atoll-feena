@@ -8,11 +8,13 @@ import {
   ShieldCheck,
   Thermometer,
   Trash2,
+  Waves,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { DiveSite } from '../../types';
 import { SiteVisualsPanel } from './SiteVisualsPanel';
+import { useSiteIntelligence } from '../../hooks/useSiteIntelligence';
 
 interface DiveSiteCardProps {
   site: DiveSite;
@@ -34,6 +36,7 @@ export function DiveSiteCard({
   onLogAtSite,
 }: DiveSiteCardProps) {
   const isCustom = site.id.startsWith('custom-');
+  const { summary, loading: intelligenceLoading } = useSiteIntelligence(site.id, isExpanded && !isCustom);
 
   return (
     <motion.div
@@ -119,6 +122,8 @@ export function DiveSiteCard({
 
               <SiteVisualsPanel site={site} />
 
+              <SiteIntelligenceSummary summary={summary} loading={intelligenceLoading} />
+
               <div className="flex flex-wrap gap-1.5 mb-6">
                 {site.marineLifeHighlights.map((life) => (
                   <span key={life} className="bg-maldives-lagoon/5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase text-maldives-lagoon">
@@ -170,6 +175,90 @@ export function DiveSiteCard({
         </div>
       )}
     </motion.div>
+  );
+}
+
+function SiteIntelligenceSummary({
+  summary,
+  loading,
+}: {
+  summary: ReturnType<typeof useSiteIntelligence>['summary'];
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="mb-6 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-xs font-semibold text-slate-500">
+        Loading recent diver reports...
+      </div>
+    );
+  }
+
+  if (summary.reportCount === 0) {
+    return (
+      <div className="mb-6 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-xs font-semibold text-slate-500">
+        No recent diver condition reports yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-6 rounded-2xl border border-maldives-shallow/30 bg-maldives-shallow/10 p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-maldives-lagoon">
+            Recent Diver Intelligence
+          </p>
+          <p className="text-[11px] font-semibold text-slate-500">
+            {summary.reportCount} report{summary.reportCount === 1 ? '' : 's'} · {summary.confidence} confidence
+          </p>
+        </div>
+        <Waves className="h-5 w-5 text-maldives-lagoon" />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <MiniStat label="Vis" value={summary.averageVisibility ? `${summary.averageVisibility}m` : '--'} />
+        <MiniStat label="Current" value={summary.typicalCurrent || '--'} />
+        <MiniStat label="Temp" value={summary.averageWaterTemp ? `${summary.averageWaterTemp}°C` : '--'} />
+      </div>
+      {summary.topHazards.length > 0 && (
+        <TagRow label="Hazards" items={summary.topHazards.map((item) => item.label)} tone="rose" />
+      )}
+      {summary.reefSignals.length > 0 && (
+        <TagRow label="Reef" items={summary.reefSignals.map((item) => item.label)} tone="emerald" />
+      )}
+      {summary.debrisSignals.length > 0 && (
+        <TagRow label="Debris" items={summary.debrisSignals.map((item) => item.label)} tone="amber" />
+      )}
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-white px-3 py-2">
+      <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+      <p className="mt-1 truncate text-xs font-bold capitalize text-maldives-deep">{value}</p>
+    </div>
+  );
+}
+
+function TagRow({ label, items, tone }: { label: string; items: string[]; tone: 'rose' | 'emerald' | 'amber' }) {
+  const toneClass = {
+    rose: 'bg-rose-50 text-rose-600',
+    emerald: 'bg-emerald-50 text-emerald-700',
+    amber: 'bg-amber-50 text-amber-700',
+  }[tone];
+
+  return (
+    <div className="mt-3">
+      <p className="mb-1 text-[8px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((item) => (
+          <span key={item} className={cn('rounded-lg px-2 py-1 text-[10px] font-bold capitalize', toneClass)}>
+            {item}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 

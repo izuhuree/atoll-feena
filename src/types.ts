@@ -11,6 +11,7 @@ export type DiveType =
   | 'drift' | 'manta' | 'whale shark' | 'shark' | 'training' | 'photography';
 
 export type CurrentStrength = 'none' | 'mild' | 'moderate' | 'strong' | 'very strong' | 'unknown';
+export type CurrentDirection = 'incoming' | 'outgoing' | 'cross' | 'variable' | 'none' | 'unknown';
 export type SurgeStrength = 'none' | 'mild' | 'moderate' | 'strong' | 'unknown';
 export type EntryExitDifficulty = 'easy' | 'manageable' | 'challenging' | 'hazardous' | 'unknown';
 export type ObservationConfidence = 'low' | 'medium' | 'high';
@@ -125,12 +126,34 @@ export interface AppSettings {
 export interface DiveSiteConditionReport {
   visibilityMeters?: number;
   current: CurrentStrength;
+  currentDirection?: CurrentDirection;
   surge?: SurgeStrength;
   waterTempC?: number;
+  thermoclineDepthMeters?: number;
+  surfaceConditions?: 'calm' | 'choppy' | 'rough' | 'unknown';
+  weatherNotes?: string;
   entryExitDifficulty?: EntryExitDifficulty;
   hazards?: string[];
   hazardNotes?: string;
   reportTime: string;
+}
+
+export interface SiteConditionReport extends DiveSiteConditionReport {
+  id: string;
+  siteId: string;
+  siteName: string;
+  atoll: Atoll;
+  island?: string;
+  sourceDiveLogId: string;
+  submittedBy: string;
+  contributorRole?: UserRole;
+  reefHealthSignals?: ReefHealthIndicator[];
+  debrisSignals?: DebrisType[];
+  speciesCount?: number;
+  mediaEvidenceCount?: number;
+  verificationStatus: ObservationMetadata['verificationStatus'];
+  privacy: ObservationMetadata['privacy'];
+  createdAt: string;
 }
 
 export interface SpeciesObservation {
@@ -215,6 +238,10 @@ export interface DiveLog {
     url: string;
     type: 'image' | 'video';
     id: string;
+    storagePath?: string;
+    contentType?: string;
+    description?: string;
+    observationRef?: string;
   }>;
   syncStatus: 'synced' | 'pending';
 }

@@ -8,6 +8,7 @@ import { SiteSelectionPanel } from '../quick-log/SiteSelectionPanel';
 import { DiveProfilePanel, GasPressurePanel } from '../quick-log/DiveProfileAndGasPanels';
 import { ObservationsPanel, DiveMediaPanel } from '../quick-log/ObservationsAndMediaPanels';
 import { DiveReviewPanel } from '../quick-log/DiveReviewPanel';
+import { validateDiveLogDraft } from '../../lib/diveLogValidation';
 
 interface QuickLogProps {
   onComplete: () => void;
@@ -32,19 +33,24 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showStepError, setShowStepError] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const {
     uploadingProgress,
     fileInputRef,
     handleFileSelect,
     triggerFileInput,
-  } = useFileUpload((file, id, type, url) => {
+  } = useFileUpload((file, media) => {
     const species = (fileInputRef.current as any).speciesTag;
     setFormData((prev) => ({
       ...prev,
       media: [
         ...(prev.media || []),
-        { id, type, url, description: species ? `Photo of ${species}` : undefined } as any,
+        {
+          ...media,
+          description: species ? `Photo of ${species}` : undefined,
+          observationRef: species ? `species:${species}` : undefined,
+        },
       ],
       speciesObservations: species
         ? (prev.speciesObservations || []).map((item) =>
@@ -143,6 +149,12 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
   };
 
   const handleComplete = async () => {
+    const validationErrors = validateDiveLogDraft(formData);
+    if (validationErrors.length > 0) {
+      setStatusMessage(validationErrors[0]);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const sac = calculateSAC();
@@ -173,6 +185,7 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
       onComplete();
     } catch (error) {
       console.error('Failed to log dive:', error);
+      setStatusMessage('Failed to save this dive. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -256,6 +269,11 @@ export function QuickLog({ onComplete, onCancel }: QuickLogProps) {
             {showStepError && !isStepValid() && (
               <p className="text-xs text-rose-500 font-medium text-center" role="alert">
                 {stepErrorMessage()}
+              </p>
+            )}
+            {statusMessage && (
+              <p className="text-xs text-rose-500 font-medium text-center" role="alert">
+                {statusMessage}
               </p>
             )}
             {step < TOTAL_STEPS ? (

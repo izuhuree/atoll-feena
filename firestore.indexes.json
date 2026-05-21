@@ -15,6 +15,14 @@
         { "fieldPath": "atoll", "order": "ASCENDING" },
         { "fieldPath": "islandBase", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "siteConditionReports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "siteId", "order": "ASCENDING" },
+        { "fieldPath": "reportTime", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

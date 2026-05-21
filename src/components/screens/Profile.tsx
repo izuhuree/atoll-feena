@@ -438,7 +438,17 @@ export function Profile({ user, onOpenWatch }: ProfileProps) {
 
       <div className="flex items-center justify-center gap-2 mt-10">
         <img src="/logo.png" alt="" className="w-3 h-3 rounded-full opacity-50 grayscale" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-        <p className="text-center text-[10px] text-slate-300 font-medium">AtollFeeNa v1.0.0 — Maldivian Blue</p>
+        <p className="text-center text-[10px] text-slate-300 font-medium">
+          AtollFeeNa v1.0.0 —{' '}
+          <a
+            href="https://izuct.com"
+            target="_blank"
+            rel="noreferrer"
+            className="text-slate-400 underline decoration-slate-300 underline-offset-2"
+          >
+            izuct.com
+          </a>
+        </p>
       </div>
     </div>
   );

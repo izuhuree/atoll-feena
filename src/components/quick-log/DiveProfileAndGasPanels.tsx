@@ -153,6 +153,41 @@ export function DiveProfilePanel({ formData, setFormData }: DiveProfilePanelProp
         </div>
 
         <div className="space-y-3">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Current Direction
+          </label>
+          <div className="flex gap-2 flex-wrap">
+            {catalog.currentDirection.length === 0 && (
+              <p className="text-xs text-slate-400">Current direction options are not configured yet.</p>
+            )}
+            {catalog.currentDirection.map((currentDirection) => (
+              <button
+                key={currentDirection}
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    siteConditions: {
+                      ...formData.siteConditions,
+                      current: formData.current || 'unknown',
+                      currentDirection,
+                      reportTime: formData.siteConditions?.reportTime || new Date().toISOString(),
+                    },
+                  })
+                }
+                className={cn(
+                  'px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all',
+                  formData.siteConditions?.currentDirection === currentDirection
+                    ? 'bg-maldives-lagoon text-white'
+                    : 'bg-slate-100 text-slate-500'
+                )}
+              >
+                {currentDirection}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-3">
           <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Surge</label>
           <div className="flex gap-2 flex-wrap">
             {catalog.surge.length === 0 && (
@@ -182,6 +217,60 @@ export function DiveProfilePanel({ formData, setFormData }: DiveProfilePanelProp
                 {surge}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Thermocline (m)
+            </label>
+            <input
+              type="number"
+              className="w-full p-4 bg-slate-50 rounded-2xl border-none"
+              value={formData.siteConditions?.thermoclineDepthMeters ?? ''}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  siteConditions: {
+                    ...formData.siteConditions,
+                    current: formData.current || 'unknown',
+                    thermoclineDepthMeters: e.target.value ? Number(e.target.value) : undefined,
+                    reportTime: formData.siteConditions?.reportTime || new Date().toISOString(),
+                  },
+                })
+              }
+              placeholder="Optional"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Surface
+            </label>
+            <select
+              className="w-full p-4 bg-slate-50 rounded-2xl border-none appearance-none font-medium capitalize"
+              value={formData.siteConditions?.surfaceConditions || 'unknown'}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  siteConditions: {
+                    ...formData.siteConditions,
+                    current: formData.current || 'unknown',
+                    surfaceConditions: e.target.value as any,
+                    reportTime: formData.siteConditions?.reportTime || new Date().toISOString(),
+                  },
+                })
+              }
+            >
+              {catalog.surfaceConditions.length === 0 && (
+                <option value="">Surface options not configured</option>
+              )}
+              {catalog.surfaceConditions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -264,6 +353,29 @@ export function DiveProfilePanel({ formData, setFormData }: DiveProfilePanelProp
                   ...formData.siteConditions,
                   current: formData.current || 'unknown',
                   hazardNotes: e.target.value,
+                  reportTime: formData.siteConditions?.reportTime || new Date().toISOString(),
+                },
+              })
+            }
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Weather / Surface Note
+          </label>
+          <input
+            type="text"
+            placeholder="Optional note on wind, chop, swell or surface drift"
+            className="w-full p-4 bg-slate-50 rounded-2xl border-none"
+            value={formData.siteConditions?.weatherNotes || ''}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                siteConditions: {
+                  ...formData.siteConditions,
+                  current: formData.current || 'unknown',
+                  weatherNotes: e.target.value,
                   reportTime: formData.siteConditions?.reportTime || new Date().toISOString(),
                 },
               })

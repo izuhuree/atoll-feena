@@ -3,6 +3,7 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import {
   CurrentStrength,
+  CurrentDirection,
   DebrisType,
   EntryExitDifficulty,
   ReefHealthIndicator,
@@ -11,7 +12,9 @@ import {
 
 export interface ObservationCatalog {
   currentStrength: CurrentStrength[];
+  currentDirection: CurrentDirection[];
   surge: SurgeStrength[];
+  surfaceConditions: Array<'calm' | 'choppy' | 'rough' | 'unknown'>;
   entryExitDifficulty: EntryExitDifficulty[];
   hazards: string[];
   reefHealth: ReefHealthIndicator[];
@@ -22,7 +25,9 @@ type CatalogKey = keyof ObservationCatalog;
 
 const EMPTY_CATALOG: ObservationCatalog = {
   currentStrength: [],
+  currentDirection: [],
   surge: [],
+  surfaceConditions: [],
   entryExitDifficulty: [],
   hazards: [],
   reefHealth: [],
@@ -31,7 +36,9 @@ const EMPTY_CATALOG: ObservationCatalog = {
 
 const CATALOG_KEYS = new Set<CatalogKey>([
   'currentStrength',
+  'currentDirection',
   'surge',
+  'surfaceConditions',
   'entryExitDifficulty',
   'hazards',
   'reefHealth',

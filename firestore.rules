@@ -114,10 +114,17 @@ service cloud.firestore {
              data.date is string && data.date.size() == 10 &&
              data.siteId is string && data.siteId.size() <= 128 &&
              (data.rating == null || (data.rating is number && data.rating >= 0 && data.rating <= 5)) &&
-             (data.maxDepth == null || data.maxDepth is number && data.maxDepth >= 4) &&
-             (data.duration == null || data.duration is number && data.duration >= 0) &&
+             (data.maxDepth == null || data.maxDepth is number && data.maxDepth >= 4 && data.maxDepth <= 60) &&
+             (data.avgDepth == null || data.avgDepth is number && data.avgDepth >= 0 && data.avgDepth <= data.maxDepth) &&
+             (data.duration == null || data.duration is number && data.duration >= 1 && data.duration <= 300) &&
+             (data.visibility == null || data.visibility is number && data.visibility >= 0 && data.visibility <= 80) &&
+             (data.waterTemp == null || data.waterTemp is number && data.waterTemp >= 10 && data.waterTemp <= 40) &&
+             (data.oxygenPercent == null || data.oxygenPercent is number && data.oxygenPercent >= 21 && data.oxygenPercent <= 40) &&
+             (data.startPressure == null || data.startPressure is number && data.startPressure >= 0 && data.startPressure <= 300) &&
+             (data.endPressure == null || data.endPressure is number && data.endPressure >= 0 && data.endPressure <= 300) &&
              (data.notes == null || data.notes is string && data.notes.size() <= 2000) &&
              (data.marineLife == null || data.marineLife is list && data.marineLife.size() <= 20) &&
+             (data.media == null || data.media is list && data.media.size() <= 20) &&
              (data.siteConditions == null || isValidSiteConditionReport(data.siteConditions)) &&
              (data.speciesObservations == null || data.speciesObservations is list && data.speciesObservations.size() <= 40) &&
              (data.reefHealthObservations == null || data.reefHealthObservations is list && data.reefHealthObservations.size() <= 20) &&
@@ -131,12 +138,38 @@ service cloud.firestore {
       return data is map &&
              (data.visibilityMeters == null || data.visibilityMeters is number && data.visibilityMeters >= 0 && data.visibilityMeters <= 80) &&
              data.current in ['none', 'mild', 'moderate', 'strong', 'very strong', 'unknown'] &&
+             (data.currentDirection == null || data.currentDirection in ['incoming', 'outgoing', 'cross', 'variable', 'none', 'unknown']) &&
              (data.surge == null || data.surge in ['none', 'mild', 'moderate', 'strong', 'unknown']) &&
              (data.waterTempC == null || data.waterTempC is number && data.waterTempC >= 10 && data.waterTempC <= 40) &&
+             (data.thermoclineDepthMeters == null || data.thermoclineDepthMeters is number && data.thermoclineDepthMeters >= 0 && data.thermoclineDepthMeters <= 60) &&
+             (data.surfaceConditions == null || data.surfaceConditions in ['calm', 'choppy', 'rough', 'unknown']) &&
+             (data.weatherNotes == null || data.weatherNotes is string && data.weatherNotes.size() <= 500) &&
              (data.entryExitDifficulty == null || data.entryExitDifficulty in ['easy', 'manageable', 'challenging', 'hazardous', 'unknown']) &&
              (data.hazards == null || data.hazards is list && data.hazards.size() <= 10) &&
              (data.hazardNotes == null || data.hazardNotes is string && data.hazardNotes.size() <= 500) &&
              data.reportTime is string;
+    }
+
+    function isValidSiteConditionPublicReport(data) {
+      return data is map &&
+             data.id is string &&
+             data.siteId is string &&
+             data.siteId.size() <= 128 &&
+             data.siteName is string &&
+             data.siteName.size() <= 100 &&
+             data.atoll is string &&
+             data.sourceDiveLogId == data.id &&
+             data.submittedBy == request.auth.uid &&
+             isValidSiteConditionReport(data) &&
+             (data.island == null || data.island is string && data.island.size() <= 100) &&
+             (data.contributorRole == null || data.contributorRole in ['recreational-diver', 'verified-contributor', 'dive-professional', 'dive-centre-manager', 'marine-science-reviewer', 'platform-admin']) &&
+             (data.reefHealthSignals == null || data.reefHealthSignals is list && data.reefHealthSignals.size() <= 20) &&
+             (data.debrisSignals == null || data.debrisSignals is list && data.debrisSignals.size() <= 20) &&
+             (data.speciesCount == null || data.speciesCount is number && data.speciesCount >= 0 && data.speciesCount <= 40) &&
+             (data.mediaEvidenceCount == null || data.mediaEvidenceCount is number && data.mediaEvidenceCount >= 0 && data.mediaEvidenceCount <= 20) &&
+             data.verificationStatus in ['unverified', 'needs review', 'verified'] &&
+             data.privacy in ['public aggregate', 'hide diver identity'] &&
+             data.createdAt is string;
     }
 
     function isValidObservationMetadata(data) {
@@ -268,8 +301,22 @@ service cloud.firestore {
     match /observationCatalog/{catalogId} {
       allow read: if true;
       allow create, update: if isAdmin() &&
-        catalogId in ['currentStrength', 'surge', 'entryExitDifficulty', 'hazards', 'reefHealth', 'debris'] &&
+        catalogId in ['currentStrength', 'currentDirection', 'surge', 'surfaceConditions', 'entryExitDifficulty', 'hazards', 'reefHealth', 'debris'] &&
         isValidObservationCatalog(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /siteConditionReports/{reportId} {
+      allow read: if true;
+      allow create: if isSignedIn() &&
+        isValidId(reportId) &&
+        incoming().id == reportId &&
+        isValidSiteConditionPublicReport(incoming());
+      allow update: if isSignedIn() &&
+        isValidId(reportId) &&
+        existing().submittedBy == request.auth.uid &&
+        incoming().id == reportId &&
+        isValidSiteConditionPublicReport(incoming());
       allow delete: if isAdmin();
     }
 
@@ -301,7 +348,7 @@ service cloud.firestore {
       allow update: if isOwner(existing().userId) && isValidId(logId) && isValidDiveLog(incoming()) && 
                     incoming().userId == existing().userId &&
                     incoming().createdAt == existing().createdAt &&
-                    incoming().diff(existing()).affectedKeys().hasOnly(['date', 'siteId', 'rating', 'maxDepth', 'duration', 'notes', 'marineLife', 'siteConditions', 'speciesObservations', 'reefHealthObservations', 'debrisObservations', 'observationMetadata', 'updatedAt']);
+                    incoming().diff(existing()).affectedKeys().hasOnly(['date', 'siteId', 'rating', 'maxDepth', 'avgDepth', 'duration', 'visibility', 'waterTemp', 'oxygenPercent', 'startPressure', 'endPressure', 'notes', 'marineLife', 'media', 'siteConditions', 'speciesObservations', 'reefHealthObservations', 'debrisObservations', 'observationMetadata', 'updatedAt']);
       allow delete: if isOwner(existing().userId) && isValidId(logId);
     }
 

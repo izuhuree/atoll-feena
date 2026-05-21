@@ -43,6 +43,14 @@ service firebase.storage {
                    request.resource.contentType.matches('image/.*');
     }
 
+    match /users/{userId}/dive-media/{fileName} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow write: if isSignedIn() &&
+                   request.auth.uid == userId &&
+                   request.resource.size < 50 * 1024 * 1024 &&
+                   request.resource.contentType.matches('(image|video)/.*');
+    }
+
     // AI-generated dive-site sketches. Publicly readable so non-admins see
     // the cached image; trusted reviewers can generate; admins bypass object
     // constraints so they can resolve failed uploads and repair app media.

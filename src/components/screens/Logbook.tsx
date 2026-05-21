@@ -231,12 +231,34 @@ export function Logbook({ onLogDive }: LogbookProps = {}) {
                               </p>
                             </div>
                             <div>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase">Direction</p>
+                              <p className="font-bold capitalize">
+                                {dive.siteConditions.currentDirection || 'Unknown'}
+                              </p>
+                            </div>
+                            <div>
                               <p className="text-[9px] font-bold text-slate-400 uppercase">Entry / Exit</p>
                               <p className="font-bold capitalize">
                                 {dive.siteConditions.entryExitDifficulty || 'Unknown'}
                               </p>
                             </div>
+                            <div>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase">Surface</p>
+                              <p className="font-bold capitalize">
+                                {dive.siteConditions.surfaceConditions || 'Unknown'}
+                              </p>
+                            </div>
                           </div>
+                          {dive.siteConditions.thermoclineDepthMeters !== undefined && (
+                            <p className="mt-3 text-xs font-semibold text-slate-600">
+                              Thermocline around {dive.siteConditions.thermoclineDepthMeters}m
+                            </p>
+                          )}
+                          {dive.siteConditions.weatherNotes && (
+                            <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                              {dive.siteConditions.weatherNotes}
+                            </p>
+                          )}
                           {(dive.siteConditions.hazards?.length || 0) > 0 && (
                             <div className="flex flex-wrap gap-2 mt-3">
                               {dive.siteConditions.hazards?.map((hazard) => (
