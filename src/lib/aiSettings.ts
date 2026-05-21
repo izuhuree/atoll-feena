@@ -26,6 +26,13 @@ export function getGeminiApiKey() {
   return getStoredGeminiApiKey();
 }
 
+export function getConfiguredGeminiApiKey(adminKey?: string) {
+  const buildKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (buildKey && buildKey !== 'MY_GEMINI_API_KEY') return buildKey;
+  if (adminKey?.trim()) return adminKey.trim();
+  return getStoredGeminiApiKey();
+}
+
 export function maskApiKey(apiKey: string) {
   if (!apiKey) return 'Not configured';
   if (apiKey.length <= 10) return 'Saved';

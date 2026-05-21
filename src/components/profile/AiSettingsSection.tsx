@@ -1,37 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Eye, EyeOff, KeyRound, Save, Trash2 } from 'lucide-react';
+import { KeyRound, Trash2 } from 'lucide-react';
 import {
   clearStoredGeminiApiKey,
   getStoredGeminiApiKey,
-  maskApiKey,
-  saveStoredGeminiApiKey,
 } from '../../lib/aiSettings';
 
 export function AiSettingsSection() {
-  const [apiKey, setApiKey] = useState('');
-  const [showKey, setShowKey] = useState(false);
   const [savedKey, setSavedKey] = useState('');
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = getStoredGeminiApiKey();
-    setApiKey(stored);
-    setSavedKey(stored);
+    setSavedKey(getStoredGeminiApiKey());
   }, []);
-
-  const saveKey = () => {
-    saveStoredGeminiApiKey(apiKey);
-    const stored = getStoredGeminiApiKey();
-    setSavedKey(stored);
-    setApiKey(stored);
-    setMessage(stored ? 'Gemini API key saved on this device.' : 'Gemini API key removed.');
-  };
 
   const clearKey = () => {
     clearStoredGeminiApiKey();
-    setApiKey('');
     setSavedKey('');
-    setMessage('Gemini API key removed from this device.');
+    setMessage('Old device key removed. Pro AI features use the admin-managed key.');
   };
 
   return (
@@ -45,55 +30,27 @@ export function AiSettingsSection() {
           <div>
             <p className="font-bold text-maldives-deep">Gemini API Key</p>
             <p className="text-xs leading-relaxed text-slate-500 mt-1">
-              Used for trusted AI features such as dive-site sketch generation. Stored locally on this device only.
+              Pro AI features use the admin-managed key in App Settings. This device key is no longer required.
             </p>
-            <p className="mt-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-              {maskApiKey(savedKey)}
-            </p>
+            {savedKey && (
+              <p className="mt-2 text-[11px] font-bold uppercase tracking-widest text-amber-600">
+                Old device key detected
+              </p>
+            )}
           </div>
         </div>
-
-        <label className="block">
-          <span className="text-xs font-semibold text-slate-500">API Key</span>
-          <div className="mt-1 flex gap-2">
-            <input
-              type={showKey ? 'text' : 'password'}
-              value={apiKey}
-              onChange={(event) => setApiKey(event.target.value)}
-              placeholder="AIza..."
-              autoComplete="off"
-              spellCheck={false}
-              className="min-h-[44px] flex-1 rounded-xl border border-slate-200 px-3 text-sm"
-            />
-            <button
-              type="button"
-              onClick={() => setShowKey((value) => !value)}
-              aria-label={showKey ? 'Hide API key' : 'Show API key'}
-              className="min-h-[44px] w-11 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500"
-            >
-              {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-        </label>
 
         {message && <p className="text-xs font-semibold text-maldives-lagoon">{message}</p>}
 
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={saveKey}
-            className="min-h-[48px] bg-maldives-deep text-white rounded-2xl font-semibold flex items-center justify-center gap-2"
-          >
-            <Save className="w-4 h-4" />
-            Save Key
-          </button>
+        {savedKey && (
           <button
             onClick={clearKey}
-            className="min-h-[48px] bg-slate-100 text-slate-600 rounded-2xl font-semibold flex items-center justify-center gap-2"
+            className="min-h-[48px] w-full bg-slate-100 text-slate-600 rounded-2xl font-semibold flex items-center justify-center gap-2"
           >
             <Trash2 className="w-4 h-4" />
-            Remove
+            Remove Old Device Key
           </button>
-        </div>
+        )}
       </div>
     </section>
   );

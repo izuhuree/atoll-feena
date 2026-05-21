@@ -24,6 +24,7 @@ interface DiveSiteCardProps {
   onEdit: (site: DiveSite) => void;
   onDelete: (id: string) => void;
   canDelete: boolean;
+  geminiApiKey?: string;
   onLogAtSite: (siteId: string) => void;
 }
 
@@ -34,6 +35,7 @@ export function DiveSiteCard({
   onEdit,
   onDelete,
   canDelete,
+  geminiApiKey,
   onLogAtSite,
 }: DiveSiteCardProps) {
   const isCustom = site.id.startsWith('custom-');
@@ -122,7 +124,7 @@ export function DiveSiteCard({
                 )}
               </div>
 
-              <SiteVisualsPanel site={site} />
+              <SiteVisualsPanel site={site} geminiApiKey={geminiApiKey} />
 
               <SiteIntelligenceSummary summary={summary} loading={intelligenceLoading} />
 

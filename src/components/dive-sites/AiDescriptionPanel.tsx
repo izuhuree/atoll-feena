@@ -7,11 +7,12 @@ import { useDiveSiteDescriptionAI } from '../../hooks/useDiveSiteDescriptionAI';
 interface AiDescriptionPanelProps {
   site: Partial<DiveSite>;
   canGenerate: boolean;
+  geminiApiKey?: string;
   onApply: (description: string, sources: SourceReference[]) => void;
 }
 
-export function AiDescriptionPanel({ site, canGenerate, onApply }: AiDescriptionPanelProps) {
-  const { draft, isGenerating, error, generate } = useDiveSiteDescriptionAI();
+export function AiDescriptionPanel({ site, canGenerate, geminiApiKey, onApply }: AiDescriptionPanelProps) {
+  const { draft, isGenerating, error, generate } = useDiveSiteDescriptionAI(geminiApiKey);
   const [draftText, setDraftText] = useState('');
 
   useEffect(() => {

@@ -14,6 +14,7 @@ interface DiveSiteFormProps {
   editing: boolean;
   canEditStructured: boolean;
   canEditSketchInstructions: boolean;
+  geminiApiKey?: string;
   submitLabel?: string;
 }
 
@@ -30,6 +31,7 @@ export function DiveSiteForm({
   editing,
   canEditStructured,
   canEditSketchInstructions,
+  geminiApiKey,
   submitLabel,
 }: DiveSiteFormProps) {
   const { atolls } = useAtolls();
@@ -292,6 +294,7 @@ export function DiveSiteForm({
               <AiDescriptionPanel
                 site={newSite}
                 canGenerate
+                geminiApiKey={geminiApiKey}
                 onApply={applyAiDescription}
               />
             </div>

@@ -1,7 +1,8 @@
 import { User } from 'firebase/auth';
 import { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
-import { Database, Save, Settings2, Sparkles } from 'lucide-react';
+import { Database, KeyRound, Save, Settings2, Sparkles } from 'lucide-react';
+import { maskApiKey } from '../../lib/aiSettings';
 import { DEFAULT_APP_SETTINGS, useAppSettings } from '../../hooks/useAppSettings';
 import { AppSettings } from '../../types';
 
@@ -72,6 +73,24 @@ export function AppSettingsSection({ enabled, user }: AppSettingsSectionProps) {
 
       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 space-y-4">
         <SectionHeader icon={<Sparkles className="w-4 h-4" />} title="Sketch Settings" />
+        <label className="block">
+          <span className="text-xs font-semibold text-slate-500">Admin Gemini API key</span>
+          <div className="mt-1 flex items-center gap-2">
+            <KeyRound className="h-4 w-4 text-slate-400" />
+            <input
+              type="password"
+              value={form.geminiApiKey || ''}
+              onChange={(event) => updateField('geminiApiKey', event.target.value)}
+              placeholder="AIza..."
+              autoComplete="off"
+              spellCheck={false}
+              className="min-h-[44px] flex-1 rounded-xl border border-slate-200 px-3 text-sm"
+            />
+          </div>
+          <span className="mt-2 block text-xs font-medium text-slate-500">
+            Used by Pro and trusted AI features. Current: {maskApiKey(form.geminiApiKey || '')}
+          </span>
+        </label>
         <SettingToggle
           label="Enable AI dive site sketches"
           description="Authorised users can regenerate sketches from reviewed sketch instructions."

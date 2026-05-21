@@ -14,6 +14,7 @@ import { useFilteredDiveSites } from '../../hooks/useFilteredDiveSites';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useDiveSiteStats } from '../../hooks/useDiveSiteStats';
 import { useUserRole } from '../../hooks/useUserRole';
+import { useAppSettings } from '../../hooks/useAppSettings';
 import { AnimatePresence } from 'motion/react';
 import { DiveSiteForm } from '../dive-sites/DiveSiteForm';
 import { DiveSiteMappingSection } from '../dive-sites/DiveSiteMappingSection';
@@ -28,6 +29,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
   const { saveSite, deleteSite } = useDiveSiteMutations();
   const { submitSuggestion } = useDiveSiteSuggestions();
   const { canPublishDiveSiteInfo, canEditSketchInstructions } = useUserRole(user);
+  const { effectiveSettings } = useAppSettings(Boolean(user), user);
   const { atolls } = useAtolls();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAtoll, setSelectedAtoll] = useState<Atoll | 'All'>('All');
@@ -287,6 +289,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
                   onEdit={startEditing}
                   onDelete={deleteSite}
                   canDelete={canPublishDiveSiteInfo}
+                  geminiApiKey={effectiveSettings.geminiApiKey}
                   onLogAtSite={onLogAtSite}
                 />
               ))}
@@ -325,6 +328,7 @@ export function DiveSites({ user, onLogAtSite }: DiveSitesProps) {
             editing={!!editingSiteId}
             canEditStructured={canPublishDiveSiteInfo}
             canEditSketchInstructions={canEditSketchInstructions}
+            geminiApiKey={effectiveSettings.geminiApiKey}
             submitLabel={canPublishDiveSiteInfo ? undefined : 'Submit Suggestion'}
           />
         )}

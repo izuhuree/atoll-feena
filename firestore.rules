@@ -269,10 +269,10 @@ service cloud.firestore {
              (data.appName == null || data.appName is string && data.appName.size() <= 80) &&
              (data.contributionReviewRequired == null || data.contributionReviewRequired is bool) &&
              (data.sketchGenerationEnabled == null || data.sketchGenerationEnabled is bool) &&
+             (data.geminiApiKey == null || data.geminiApiKey is string && data.geminiApiKey.size() <= 128) &&
              (data.defaultSketchInstructionsFromDescription == null || data.defaultSketchInstructionsFromDescription is bool) &&
              (data.speciesObservationReviewRequired == null || data.speciesObservationReviewRequired is bool) &&
-             (data.publicDiveDataDefault == null || data.publicDiveDataDefault in ['private', 'public aggregate']) &&
-             (data.dataExportEnabled == null || data.dataExportEnabled is bool) &&
+             (data.publicDiveDataDefault == null || data.publicDiveDataDefault in ['private', 'public aggregate']) && (data.dataExportEnabled == null || data.dataExportEnabled is bool) &&
              (data.updatedBy == null || data.updatedBy is string) &&
              (data.updatedAt == null || data.updatedAt is string);
     }
@@ -415,7 +415,7 @@ service cloud.firestore {
     }
 
     match /appSettings/{settingsId} {
-      allow read: if isAdmin() && isValidId(settingsId);
+      allow read: if isValidId(settingsId) && (isAdmin() || canPublishDiveSiteInfo() || (isSignedIn() && exists(/databases/$(database)/documents/proSubscriptions/$(request.auth.uid)) && get(/databases/$(database)/documents/proSubscriptions/$(request.auth.uid)).data.status == 'active'));
       allow write: if isAdmin() && isValidId(settingsId) && isValidAppSettings(incoming());
     }
 

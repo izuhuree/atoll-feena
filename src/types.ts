@@ -121,6 +121,7 @@ export interface AppSettings {
   appName?: string;
   contributionReviewRequired?: boolean;
   sketchGenerationEnabled?: boolean;
+  geminiApiKey?: string;
   defaultSketchInstructionsFromDescription?: boolean;
   speciesObservationReviewRequired?: boolean;
   publicDiveDataDefault?: 'private' | 'public aggregate';

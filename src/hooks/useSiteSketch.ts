@@ -6,7 +6,7 @@ import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { db, storage, auth } from '../lib/firebase';
 import { DiveSite } from '../types';
 import { buildSketchPrompt } from '../lib/sketchPrompt';
-import { getGeminiApiKey } from '../lib/aiSettings';
+import { getConfiguredGeminiApiKey } from '../lib/aiSettings';
 
 type Status = 'idle' | 'loading-existing' | 'generating' | 'ready' | 'error';
 
@@ -32,7 +32,7 @@ const SKETCH_ROLES = [
  *
  * We never call Gemini twice for the same site — caching is the whole point.
  */
-export function useSiteSketch(site: DiveSite) {
+export function useSiteSketch(site: DiveSite, adminGeminiApiKey?: string) {
   const [status, setStatus] = useState<Status>('idle');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -103,9 +103,9 @@ export function useSiteSketch(site: DiveSite) {
       return;
     }
 
-    const apiKey = getGeminiApiKey();
+    const apiKey = getConfiguredGeminiApiKey(adminGeminiApiKey);
     if (!apiKey) {
-      setError('Add a Gemini API key in Profile > AI Settings before generating sketches.');
+      setError('Ask an administrator to add the Gemini API key in Settings before generating sketches.');
       return;
     }
 
@@ -166,7 +166,7 @@ export function useSiteSketch(site: DiveSite) {
       setError(err instanceof Error ? err.message : 'Failed to generate sketch.');
       setStatus('error');
     }
-  }, [canGenerate, site]);
+  }, [adminGeminiApiKey, canGenerate, site]);
 
   return {
     status,

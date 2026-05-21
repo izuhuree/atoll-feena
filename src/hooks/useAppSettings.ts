@@ -8,6 +8,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   appName: 'AtollFeeNa',
   contributionReviewRequired: true,
   sketchGenerationEnabled: true,
+  geminiApiKey: '',
   defaultSketchInstructionsFromDescription: true,
   speciesObservationReviewRequired: true,
   publicDiveDataDefault: 'private',

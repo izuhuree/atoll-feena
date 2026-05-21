@@ -15,6 +15,7 @@ type Tab = 'locator' | 'sketch';
 
 interface SiteVisualsPanelProps {
   site: DiveSite;
+  geminiApiKey?: string;
 }
 
 /**
@@ -25,12 +26,12 @@ interface SiteVisualsPanelProps {
  *    that takes over. Admins see a "Generate AI sketch" button that calls
  *    Gemini Imagen and caches the result back to Firebase Storage.
  */
-export function SiteVisualsPanel({ site }: SiteVisualsPanelProps) {
+export function SiteVisualsPanel({ site, geminiApiKey }: SiteVisualsPanelProps) {
   const [tab, setTab] = useState<Tab>('locator');
   const [instructions, setInstructions] = useState(site.sketchInstructions || site.description || '');
   const [isSavingInstructions, setIsSavingInstructions] = useState(false);
   const [instructionsMessage, setInstructionsMessage] = useState<string | null>(null);
-  const { imageUrl, canGenerate, generate, isGenerating, error } = useSiteSketch(site);
+  const { imageUrl, canGenerate, generate, isGenerating, error } = useSiteSketch(site, geminiApiKey);
 
   useEffect(() => {
     setInstructions(site.sketchInstructions || site.description || '');

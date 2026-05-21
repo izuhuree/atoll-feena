@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { DiveSite, SourceReference } from '../types';
-import { getGeminiApiKey } from '../lib/aiSettings';
+import { getConfiguredGeminiApiKey } from '../lib/aiSettings';
 import { buildDiveSiteDescriptionPrompt } from '../lib/diveSiteDescriptionPrompt';
 
 const DESCRIPTION_MODEL = import.meta.env.VITE_GEMINI_TEXT_MODEL || 'gemini-2.5-flash';
@@ -62,15 +62,15 @@ function parseDraft(text: string): DescriptionDraft {
   };
 }
 
-export function useDiveSiteDescriptionAI() {
+export function useDiveSiteDescriptionAI(adminGeminiApiKey?: string) {
   const [draft, setDraft] = useState<DescriptionDraft | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const generate = async (site: Partial<DiveSite>) => {
-    const apiKey = getGeminiApiKey();
+    const apiKey = getConfiguredGeminiApiKey(adminGeminiApiKey);
     if (!apiKey) {
-      setError('Add a Gemini API key in Profile > AI Settings before generating descriptions.');
+      setError('Ask an administrator to add the Gemini API key in Settings before generating descriptions.');
       return;
     }
     if (!site.name) {
